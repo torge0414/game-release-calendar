@@ -34,6 +34,8 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     --shadow-hi:0 5px 12px rgba(0,0,0,.55), 0 22px 52px rgba(0,0,0,.45);
   }
   html.dark .err{background:#361d1a; border-color:#6b322c; color:#ffb4a6;}
+  /* 封面画框在夜间保持浅色, 超宽横幅(完整显示)的留白处能把深色封面衬出来 */
+  html.dark .pic{background:#c9c9cf;}
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
     background:var(--bg); color:var(--txt); min-width:320px;
