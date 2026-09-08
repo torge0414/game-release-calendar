@@ -152,7 +152,6 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
 
 <script>
 const $ = s => document.querySelector(s);
-const WD = ['周日','周一','周二','周三','周四','周五','周六'];
 
 /* 夜间模式切换(iOS 开关样式, 状态由 CSS html.dark 驱动) */
 (function(){
@@ -245,7 +244,7 @@ function card(it){
     '</div>'+
     '<div class="txt">'+
       '<div class="t"></div>'+
-      '<div class="tag"><span>'+it.month+'月'+it.day+'日 · '+WD[date.getDay()]+'</span><span>· '+when+'</span>'+mcTag+'</div>'+
+      '<div class="tag"><span>'+it.month+'月'+it.day+'日'+(it.dev?' · '+esc(it.dev):'')+'</span><span>· '+when+'</span>'+mcTag+'</div>'+
       (chips?'<div class="plats">'+chips+'</div>':'')+
     '</div>';
   wrap.querySelector('.t').textContent = it.title;
