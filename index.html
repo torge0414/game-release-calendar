@@ -113,9 +113,14 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .txt .tag{font-size:12px; color:var(--dim); margin-top:5px; display:flex; align-items:center; gap:7px;
        flex-wrap:wrap;}
   .txt .tag b{color:var(--today); font-weight:700;}
-  .txt .tag .mc{font-size:10.5px; font-weight:800; color:#fff; padding:1px 7px; border-radius:6px;
-       letter-spacing:.02em;}
-  .mc.g{background:#1f9d55;} .mc.y{background:#e2a03a;} .mc.r{background:#d6453f;}
+  .txt .tag .mc{display:none;}
+  .mcbox{position:absolute; right:12px; bottom:12px; border-radius:11px; padding:4px 10px 5px;
+       color:#fff; text-align:center; display:flex; flex-direction:column; align-items:center;
+       line-height:1.1; z-index:2; box-shadow:0 2px 8px rgba(0,0,0,.18);}
+  .mcbox .mcv{font-size:20px; font-weight:800; letter-spacing:-.01em;}
+  .mcbox .mcl{font-size:7.5px; font-weight:700; letter-spacing:.08em; opacity:.9; margin-top:1px;}
+  .mcbox.g{background:#1f9d55;} .mcbox.y{background:#e2a03a;} .mcbox.r{background:#d6453f;}
+  html.dark .mcbox{box-shadow:0 2px 10px rgba(0,0,0,.45);}
   .plats{display:flex; gap:7px; margin-top:9px; flex-wrap:wrap;}
   .chip{
     font-size:11.5px; font-weight:600; text-decoration:none; border-radius:980px;
@@ -245,16 +250,17 @@ function card(it){
       (dd?'<span class="pd">'+dd+'</span>':'')+'</a>';
   }).join('');
   const mc = (typeof it.mc==='number' && it.mc>0) ? it.mc : null;
-  const mcTag = mc ? '<span class="mc '+(mc>=75?'g':(mc>=50?'y':'r'))+'" title="Metacritic 均分">'+mc+'</span>' : '';
+  const mcBox = mc ? '<div class="mcbox '+(mc>=75?'g':(mc>=50?'y':'r'))+'" title="Metacritic 均分">'+
+      '<span class="mcv">'+mc+'</span><span class="mcl">META</span></div>' : '';
   wrap.innerHTML =
     '<div class="pic">'+imgTag+
       '<div class="ph" style="background:'+phColor(it.title)+(imgUrl?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
     '</div>'+
     '<div class="txt">'+
       '<div class="tline"><div class="t"></div>'+whenTag+'</div>'+
-      '<div class="tag"><span>'+it.month+'月'+it.day+'日'+(it.dev?' · '+esc(it.dev):'')+'</span>'+mcTag+'</div>'+
+      '<div class="tag"><span>'+it.month+'月'+it.day+'日'+(it.dev?' · '+esc(it.dev):'')+'</span></div>'+
       (chips?'<div class="plats">'+chips+'</div>':'')+
-    '</div>';
+    '</div>'+mcBox;
   wrap.querySelector('.t').textContent = it.title;
   return wrap;
 }
