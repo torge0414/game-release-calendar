@@ -17,7 +17,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     --st:#0071e3; --st-bg:#e8f1fd;
     --ps:#5e5ce6; --ps-bg:#ecebfb;
     --ns:#ff375f; --ns-bg:#feeaef;
-    --pic-bg:#e9e9ee; --spin:#d2d2d7;
+    --pic-bg:#e9e9ee; --spin:#d2d2d7; --switch-bg:#e3e3e8;
     --shadow:0 2px 6px rgba(0,0,0,.04), 0 10px 28px rgba(0,0,0,.07);
     --shadow-hi:0 4px 10px rgba(0,0,0,.06), 0 18px 44px rgba(0,0,0,.11);
     --r:18px;
@@ -29,7 +29,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     --st:#54aaff; --st-bg:#0d2b4a;
     --ps:#a5a1ff; --ps-bg:#2a2852;
     --ns:#ff6b86; --ns-bg:#4a1d2c;
-    --pic-bg:#232329; --spin:#4a4a52;
+    --pic-bg:#232329; --spin:#4a4a52; --switch-bg:#3a3a3e;
     --shadow:0 2px 6px rgba(0,0,0,.45), 0 10px 30px rgba(0,0,0,.32);
     --shadow-hi:0 5px 12px rgba(0,0,0,.55), 0 22px 52px rgba(0,0,0,.45);
   }
@@ -44,12 +44,23 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   }
   .wrap{max-width:860px; margin:0 auto; position:relative;}
   .theme-btn{
-    position:absolute; top:6px; right:0; width:34px; height:34px; border-radius:50%;
-    border:1px solid var(--line); background:var(--card); color:var(--txt);
-    cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center;
-    box-shadow:var(--shadow); transition:.25s cubic-bezier(.4,0,.2,1); z-index:5;
+    position:absolute; top:6px; right:0; width:54px; height:31px; border-radius:999px;
+    border:0; cursor:pointer; background:var(--switch-bg); padding:0;
+    box-shadow:inset 0 0 0 .5px rgba(0,0,0,.06), inset 0 1px 2px rgba(0,0,0,.06);
+    transition:background .3s; z-index:5;
   }
-  .theme-btn:hover{transform:scale(1.08);}
+  .theme-btn .tb-sun,.theme-btn .tb-moon{position:absolute; top:50%; transform:translateY(-50%);
+       font-size:12px; line-height:1; color:var(--dim); pointer-events:none; transition:color .3s;}
+  .theme-btn .tb-sun{left:9px;}
+  .theme-btn .tb-moon{right:8px;}
+  html.dark .theme-btn .tb-sun{color:#d8a13a;}
+  html.dark .theme-btn .tb-moon{color:#9aa0a6;}
+  .theme-btn .tb-knob{
+    position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%;
+    background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.25);
+    transition:left .28s cubic-bezier(.4,0,.2,1);
+  }
+  html.dark .theme-btn .tb-knob{left:25px;}
   .note{font-size:11.5px; color:var(--dim); margin-top:10px; display:flex; align-items:center;
        justify-content:center; gap:5px;}
   .note svg{width:12px; height:12px; opacity:.75;}
@@ -127,7 +138,9 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     <span class="meta" id="meta"></span>
     <div class="note">每月 1 号自动更新为当月与下月的发售数据</div>
   </header>
-  <button class="theme-btn" id="themeBtn" title="切换夜间模式" aria-label="切换夜间模式"></button>
+  <button class="theme-btn" id="themeBtn" title="切换外观" aria-label="切换浅色/夜间模式">
+    <span class="tb-sun">☀</span><span class="tb-moon">☾</span><span class="tb-knob"></span>
+  </button>
   <div class="err" id="errBox"></div>
   <div id="body"><div class="loading"><span class="spin"></span></div></div>
   <footer id="foot"></footer>
@@ -137,19 +150,13 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
 const $ = s => document.querySelector(s);
 const WD = ['周日','周一','周二','周三','周四','周五','周六'];
 
-/* 夜间模式切换 */
+/* 夜间模式切换(iOS 开关样式, 状态由 CSS html.dark 驱动) */
 (function(){
   const btn = document.getElementById('themeBtn');
-  function sync(){
-    const dark = document.documentElement.classList.contains('dark');
-    if(btn) btn.textContent = dark ? '☀️' : '🌙';
-  }
   if(btn) btn.addEventListener('click', ()=>{
     const dark = document.documentElement.classList.toggle('dark');
     try{ localStorage.setItem('glwTheme', dark ? 'dark' : 'light'); }catch(e){}
-    sync();
   });
-  sync();
 })();
 const PALS = [['#0071e3','#0a58a5'],['#af52de','#6d2fa8'],['#ff375f','#b0183a'],
   ['#34c759','#1e7a3e'],['#ff9f0a','#b26a00'],['#5e5ce6','#3634a8'],
