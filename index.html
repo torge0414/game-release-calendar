@@ -238,7 +238,7 @@ function card(it){
       (dd?'<span class="pd">'+dd+'</span>':'')+'</a>';
   }).join('');
   const mc = (typeof it.mc==='number' && it.mc>0) ? it.mc : null;
-  const mcTag = mc ? '<span class="mc '+(mc>=75?'g':(mc>=50?'y':'r'))+'">MC '+mc+'</span>' : '';
+  const mcTag = mc ? '<span class="mc '+(mc>=75?'g':(mc>=50?'y':'r'))+'" title="Metacritic 均分">'+mc+'</span>' : '';
   wrap.innerHTML =
     '<div class="pic">'+imgTag+
       '<div class="ph" style="background:'+phColor(it.title)+(imgUrl?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
