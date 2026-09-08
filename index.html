@@ -217,7 +217,7 @@ function card(it){
   if(diff===0){ whenTxt='今天发售'; whenCls='today'; }
   else if(diff===1){ whenTxt='明天发售'; whenCls='today'; }
   else if(diff>1){ whenTxt='还有 '+diff+' 天'; whenCls='soon'; }
-  else { whenTxt='已发售 '+(-diff)+' 天'; whenCls='out'; }
+  else { whenTxt='已发售'; whenCls='out'; }
   const whenTag = whenCls ? '<span class="when '+whenCls+'">'+whenTxt+'</span>' : '';
   const pl = it.plats||[];
   /* 封面优先横版图源; 候选链全部列出, 加载失败自动换下一张 */
