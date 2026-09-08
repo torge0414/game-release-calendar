@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>游戏发售日历</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#ffffff; --txt:#1d1d1f; --sub:#6e6e73; --dim:#86868b;
+    --line:rgba(0,0,0,.05);
+    --acc:#0071e3; --acc-bg:#e8f1fd;
+    --today:#ff9f0a;
+    --st:#0071e3; --st-bg:#e8f1fd;
+    --ps:#5e5ce6; --ps-bg:#ecebfb;
+    --ns:#ff375f; --ns-bg:#feeaef;
+    --shadow:0 2px 6px rgba(0,0,0,.04), 0 10px 28px rgba(0,0,0,.07);
+    --shadow-hi:0 4px 10px rgba(0,0,0,.06), 0 18px 44px rgba(0,0,0,.11);
+    --r:18px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--txt); min-width:320px;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro SC","Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; padding:26px 20px 44px;
+  }
+  .wrap{max-width:860px; margin:0 auto;}
+  header{text-align:center; padding:10px 0 4px;}
+  .eyebrow{font-size:12px; font-weight:600; color:var(--acc); letter-spacing:.12em;
+       text-transform:uppercase; margin-bottom:8px;}
+  h1{font-size:40px; font-weight:700; letter-spacing:-.02em; line-height:1.05;}
+  .sub{font-size:15px; color:var(--sub); margin-top:10px;}
+  .meta{font-size:11.5px; color:var(--dim); margin-top:8px; display:block;}
+  .sect{margin-top:34px;}
+  .sect h2{
+    font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-.01em;
+    display:flex; align-items:baseline; gap:10px; margin:0 6px 14px;
+  }
+  .sect h2 .n{color:var(--acc); font-size:24px;}
+  .sect h2 .count{font-size:12.5px; font-weight:500; color:var(--dim); margin-left:auto;}
+  /* 单列横卡: 封面左 信息右(封面用原始比例, 清晰度最佳) */
+  .list{display:flex; flex-direction:column; gap:10px;}
+  .item{
+    display:flex; align-items:center; gap:16px; background:var(--card);
+    border:1px solid var(--line); border-radius:var(--r); padding:14px 18px 14px 14px;
+    box-shadow:var(--shadow); transition:transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s;
+    position:relative; min-width:0;
+  }
+  .item:hover{transform:translateY(-2px); box-shadow:var(--shadow-hi);}
+  .item.today{border-color:rgba(255,159,10,.45);}
+  .item.today::before{
+    content:""; position:absolute; left:-1px; top:18px; bottom:18px; width:3px;
+    border-radius:0 3px 3px 0; background:var(--today);
+  }
+  .pic{flex:0 0 132px; width:132px; height:66px; border-radius:12px; overflow:hidden;
+       position:relative; background:#e9e9ee; flex:none;
+       box-shadow:inset 0 0 0 1px rgba(0,0,0,.03);}
+  .pic .cover{width:100%; height:100%; object-fit:cover; display:block;}
+  .pic .cover.wide{object-fit:contain;}  /* 超宽横幅完整显示(不裁切) */
+  .pic .ph{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+       font-size:22px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.15);}
+  .txt{min-width:0; flex:1; padding:0;}
+  .txt .t{font-size:15.5px; font-weight:600; letter-spacing:-.01em; line-height:1.3;
+       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .txt .tag{font-size:12px; color:var(--dim); margin-top:5px; display:flex; align-items:center; gap:7px;
+       flex-wrap:wrap;}
+  .txt .tag b{color:var(--today); font-weight:700;}
+  .plats{display:flex; gap:7px; margin-top:9px; flex-wrap:wrap;}
+  .chip{
+    font-size:11.5px; font-weight:600; text-decoration:none; border-radius:980px;
+    padding:3px 11px; display:inline-flex; align-items:center; gap:5px;
+    transition:.2s; letter-spacing:.01em; white-space:nowrap;
+  }
+  .chip:hover{transform:scale(1.05);}
+  .chip .pd{font-weight:500; opacity:.65; font-size:10.5px;}
+  .chip.st{color:var(--st); background:var(--st-bg);}
+  .chip.ps{color:var(--ps); background:var(--ps-bg);}
+  .chip.ns{color:var(--ns); background:var(--ns-bg);}
+  .empty{color:var(--dim); font-size:14px; padding:18px 8px; text-align:center;}
+  .loading{color:var(--dim); font-size:14px; text-align:center; padding:52px 0;}
+  .loading .spin{display:inline-block; width:22px; height:22px; border:2.5px solid #d2d2d7;
+       border-top-color:var(--acc); border-radius:50%; animation:sp .7s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .err{background:#fff2f0; border:1px solid #ffd7d2; color:#c0422a; padding:11px 16px;
+       border-radius:12px; font-size:13px; margin-top:14px; display:none; text-align:center;}
+  footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:12px;}
+  @media (max-width:640px){
+    h1{font-size:32px;}
+    .pic{flex-basis:116px; width:116px; height:58px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Release Calendar</div>
+    <h1>游戏发售日历</h1>
+    <div class="sub">Steam · PlayStation 港服 · Nintendo 港服</div>
+    <span class="meta" id="meta"></span>
+  </header>
+  <div class="err" id="errBox"></div>
+  <div id="body"><div class="loading"><span class="spin"></span></div></div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const WD = ['周日','周一','周二','周三','周四','周五','周六'];
+const PALS = [['#0071e3','#0a58a5'],['#af52de','#6d2fa8'],['#ff375f','#b0183a'],
+  ['#34c759','#1e7a3e'],['#ff9f0a','#b26a00'],['#5e5ce6','#3634a8'],
+  ['#ff6482','#a81d3a'],['#30b0c7','#1a6a78']];
+const today = new Date();
+function phColor(t){ let h=0; for(const c of t) h=(h*31+c.codePointAt(0))>>>0;
+  const [a,b]=PALS[h%PALS.length]; return 'linear-gradient(135deg,'+a+','+b+')'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function refresh(){
+  $('#errBox').style.display='none';
+  try{
+    const r = await fetch('releases.json'); const d = await r.json();
+    if(d.error) throw new Error(d.error);
+    render(d);
+  }catch(e){
+    $('#errBox').textContent='获取失败：'+e.message;
+    $('#errBox').style.display='block';
+  }
+}
+
+function render(d){
+  $('#meta').textContent = '数据更新于 ' + (d.updated||'') ;
+  const body = $('#body'); body.innerHTML='';
+  (d.groups||[]).forEach(g=>{
+    const sect = document.createElement('div'); sect.className='sect';
+    const isCur = (g.month===today.getMonth()+1 && g.year===today.getFullYear());
+    const h2 = document.createElement('h2');
+    h2.innerHTML = '<span class="n">'+(isCur?'本月':'下月')+'</span>'+
+      '<span>'+g.month+' 月</span><span class="count">'+g.games.length+' 款</span>';
+    sect.appendChild(h2);
+    const list = document.createElement('div'); list.className='list';
+    if(!g.games.length) list.innerHTML='<div class="empty">该月暂无已定档发售日</div>';
+    else g.games.forEach(it=>list.appendChild(card(it)));
+    sect.appendChild(list); body.appendChild(sect);
+  });
+  const total = (d.groups||[]).reduce((s,g)=>s+g.games.length,0);
+  $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
+}
+
+function card(it){
+  const wrap = document.createElement('div'); wrap.className='item';
+  const isToday = it.day===today.getDate() && it.month===today.getMonth()+1 && it.year===today.getFullYear();
+  if(isToday) wrap.classList.add('today');
+  const date = new Date(it.year, it.month-1, it.day);
+  const diff = Math.round((date - new Date(today.getFullYear(),today.getMonth(),today.getDate()))/86400000);
+  let when;
+  if(diff===0) when='<b>今天发售</b>';
+  else if(diff===1) when='<b>明天发售</b>';
+  else if(diff>1) when='还有 '+diff+' 天';
+  else when='已发售 '+(-diff)+' 天';
+  const pl = it.plats||[];
+  /* 封面优先横版图源; 候选链全部列出, 加载失败自动换下一张 */
+  const cand = [];
+  ['steam','ns','ps'].forEach(k=>{ const p=pl.find(x=>x.key===k); if(p&&p.img) cand.push(p.img); });
+  const imgUrl = cand[0] || '';
+  const candJson = JSON.stringify(cand).replace(/'/g, "&#39;");
+  const imgTag = imgUrl
+    ? '<img class="cover" src="'+esc(imgUrl)+'" alt="" loading="lazy" data-cand="'+candJson+'" onerror="cf(this)" onload="ckw(this)">'
+    : '';
+  const chips = pl.map(p=>{
+    const d2 = p.date||'';
+    const dd = d2.length>=10 ? (parseInt(d2.slice(5,7))+'/'+parseInt(d2.slice(8,10))) : '';
+    const pv = p.price;
+    let pfmt = '';
+    if (pv!=null && pv!==false && pv!=='') {
+      const n = Number(pv);
+      pfmt = (n % 1 === 0) ? String(n) : n.toFixed(2);
+      pfmt = (p.key==='steam' ? '¥'+pfmt : 'HK'+pfmt);
+    }
+    const url = p.url ? 'href="'+esc(p.url)+'" target="_blank"' : '';
+    const pm = (p.key==='steam'?'st':p.key);
+    return '<a class="chip '+pm+'" '+url+'>'+p.name+
+      (pfmt?' · '+pfmt:'')+
+      (dd?'<span class="pd">'+dd+'</span>':'')+'</a>';
+  }).join('');
+  wrap.innerHTML =
+    '<div class="pic">'+imgTag+
+      '<div class="ph" style="background:'+phColor(it.title)+(imgUrl?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
+    '</div>'+
+    '<div class="txt">'+
+      '<div class="t"></div>'+
+      '<div class="tag"><span>'+it.month+'月'+it.day+'日 · '+WD[date.getDay()]+'</span><span>· '+when+'</span></div>'+
+      (chips?'<div class="plats">'+chips+'</div>':'')+
+    '</div>';
+  wrap.querySelector('.t').textContent = it.title;
+  return wrap;
+}
+
+function firstChar(t){ t=(t||'').trim(); return t?Array.from(t)[0]:'?'; }
+
+/* 封面多级兜底: 当前图加载失败 -> 依次试候选链中下一张 -> 全失败显示首字占位 */
+function cf(img){
+  const cand = JSON.parse(img.dataset.cand || '[]');
+  const idx = cand.indexOf(img.src);
+  const next = cand[idx + 1];
+  if(next){ img.src = next; return; }
+  img.style.display='none';
+  const ph = img.parentNode && img.parentNode.querySelector('.ph');
+  if(ph) ph.style.display='flex';
+}
+
+/* 超宽图(比例>2.35)切 contain 完整显示, 避免横幅被裁 */
+function ckw(img){
+  try{
+    if(img.naturalWidth && img.naturalHeight && img.naturalWidth/img.naturalHeight > 2.35){
+      img.classList.add('wide');
+    }
+  }catch(e){}
+}
+
+refresh();
+</script>
+</body>
+</html>
