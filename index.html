@@ -235,8 +235,6 @@ function card(it){
     ? '<img class="cover" src="'+esc(imgUrl)+'" alt="" loading="lazy" data-cand="'+candJson+'" onerror="cf(this)" onload="ckw(this)">'
     : '';
   const chips = pl.map(p=>{
-    const d2 = p.date||'';
-    const dd = d2.length>=10 ? (parseInt(d2.slice(5,7))+'/'+parseInt(d2.slice(8,10))) : '';
     const pv = p.price;
     let pfmt = '';
     if (pv!=null && pv!==false && pv!=='') {
@@ -247,8 +245,7 @@ function card(it){
     const url = p.url ? 'href="'+esc(p.url)+'" target="_blank"' : '';
     const pm = (p.key==='steam'?'st':p.key);
     return '<a class="chip '+pm+'" '+url+'>'+p.name+
-      (pfmt?' · '+pfmt:'')+
-      (dd?'<span class="pd">'+dd+'</span>':'')+'</a>';
+      (pfmt?' · '+pfmt:'')+'</a>';
   }).join('');
   const mc = (typeof it.mc==='number' && it.mc>0) ? it.mc : null;
   const mcBox = mc ? '<a class="mcbox '+(mc>=75?'g':(mc>=50?'y':'r'))+'" href="'+esc(it.mc_url||'https://www.metacritic.com/')+'" target="_blank" rel="noopener" title="Metacritic 均分 '+(mc>=75?'好评':(mc>=50?'中评':'差评'))+'">'+
