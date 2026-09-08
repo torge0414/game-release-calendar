@@ -250,8 +250,8 @@ function card(it){
       (dd?'<span class="pd">'+dd+'</span>':'')+'</a>';
   }).join('');
   const mc = (typeof it.mc==='number' && it.mc>0) ? it.mc : null;
-  const mcBox = mc ? '<div class="mcbox '+(mc>=75?'g':(mc>=50?'y':'r'))+'" title="Metacritic 均分 '+(mc>=75?'好评':(mc>=50?'中评':'差评'))+'">'+
-      '<span class="mcv">'+mc+'</span></div>' : '';
+  const mcBox = mc ? '<a class="mcbox '+(mc>=75?'g':(mc>=50?'y':'r'))+'" href="'+esc(it.mc_url||'https://www.metacritic.com/')+'" target="_blank" rel="noopener" title="Metacritic 均分 '+(mc>=75?'好评':(mc>=50?'中评':'差评'))+'">'+
+      '<span class="mcv">'+mc+'</span></a>' : '';
   wrap.innerHTML =
     '<div class="pic">'+imgTag+
       '<div class="ph" style="background:'+phColor(it.title)+(imgUrl?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
