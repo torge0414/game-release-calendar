@@ -61,15 +61,14 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     transition:left .28s cubic-bezier(.4,0,.2,1);
   }
   html.dark .theme-btn .tb-knob{left:25px;}
-  .note{font-size:11.5px; color:var(--dim); margin-top:10px; display:flex; align-items:center;
-       justify-content:center; gap:5px;}
-  .note svg{width:12px; height:12px; opacity:.75;}
   header{text-align:center; padding:10px 0 4px;}
   .eyebrow{font-size:12px; font-weight:600; color:var(--acc); letter-spacing:.12em;
        text-transform:uppercase; margin-bottom:8px;}
   h1{font-size:40px; font-weight:700; letter-spacing:-.02em; line-height:1.05;}
   .sub{font-size:15px; color:var(--sub); margin-top:10px;}
-  .meta{font-size:11.5px; color:var(--dim); margin-top:8px; display:block;}
+  .meta{font-size:11.5px; color:var(--dim); margin-top:10px; display:flex; align-items:center;
+       justify-content:center; gap:7px;}
+  .meta .msep{opacity:.5;}
   .sect{margin-top:34px;}
   .sect h2{
     font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-.01em;
@@ -135,8 +134,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     <div class="eyebrow">Release Calendar</div>
     <h1>游戏发售日历</h1>
     <div class="sub">Steam · PlayStation 港服 · Nintendo 港服</div>
-    <span class="meta" id="meta"></span>
-    <div class="note">每月 1 号自动更新为当月与下月的发售数据</div>
+    <div class="meta"><span id="metaTxt"></span><span class="msep">·</span><span>每月初自动更新当月与下月</span></div>
   </header>
   <button class="theme-btn" id="themeBtn" title="切换外观" aria-label="切换浅色/夜间模式">
     <span class="tb-sun">☀</span><span class="tb-moon">☾</span><span class="tb-knob"></span>
@@ -179,7 +177,7 @@ async function refresh(){
 }
 
 function render(d){
-  $('#meta').textContent = '数据更新于 ' + (d.updated||'') ;
+  $('#metaTxt').textContent = '数据更新于 ' + (d.updated||'') ;
   const body = $('#body'); body.innerHTML='';
   (d.groups||[]).forEach(g=>{
     const sect = document.createElement('div'); sect.className='sect';
