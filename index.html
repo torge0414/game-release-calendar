@@ -215,7 +215,7 @@ function render(d){
   groups.forEach((g,i)=>{
     const sect = document.createElement('div'); sect.className='sect';
     const h2 = document.createElement('h2');
-    h2.innerHTML = '<span class="n">'+g.month+'</span><span>月 · '+g.year+'</span><span class="count">'+g.games.length+' 款</span>';
+    h2.innerHTML = '<span class="n">'+g.month+'</span><span>月</span><span class="count">'+g.games.length+' 款</span>';
     sect.appendChild(h2);
     const list = document.createElement('div'); list.className='list';
     if(!g.games.length) list.innerHTML='<div class="empty">该月暂无已定档发售日</div>';
