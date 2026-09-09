@@ -140,7 +140,8 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   @keyframes sp{to{transform:rotate(360deg);}}
   .err{background:#fff2f0; border:1px solid #ffd7d2; color:#c0422a; padding:11px 16px;
        border-radius:12px; font-size:13px; margin-top:14px; display:none; text-align:center;}
-  footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:12px;}
+  footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
+  .credit{color:var(--dim); font-size:11px; text-align:center; padding-bottom:16px; opacity:.8;}
   @media (max-width:640px){
     h1{font-size:32px;}
     .pic{flex-basis:116px; width:116px; height:58px;}
@@ -161,6 +162,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   <div class="err" id="errBox"></div>
   <div id="body"><div class="loading"><span class="spin"></span></div></div>
   <footer id="foot"></footer>
+  <div class="credit">by torge</div>
 </div>
 
 <script>
