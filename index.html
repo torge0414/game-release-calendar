@@ -160,6 +160,8 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   @media (max-width:640px){
     h1{font-size:32px;}
     .pic{flex-basis:116px; width:116px; height:58px;}
+    /* 窄屏: 平台标签让出右下角评分块区域, 放不下自动换行(宽屏不受影响) */
+    .plats{padding-right:62px;}
   }
 </style>
 </head>
