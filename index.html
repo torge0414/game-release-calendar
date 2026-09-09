@@ -72,7 +72,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .meta{font-size:11.5px; color:var(--dim); margin-top:10px; display:flex; align-items:center;
        justify-content:center; gap:7px;}
   .meta .msep{opacity:.5;}
-  .sect{margin-top:34px;}
+  .sect{margin-top:20px;}
   .sect h2{
     font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-.01em;
     display:flex; align-items:baseline; gap:10px; margin:0 6px 14px;
@@ -140,6 +140,15 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   @keyframes sp{to{transform:rotate(360deg);}}
   .err{background:#fff2f0; border:1px solid #ffd7d2; color:#c0422a; padding:11px 16px;
        border-radius:12px; font-size:13px; margin-top:14px; display:none; text-align:center;}
+  .tabs{display:flex; justify-content:center; gap:6px; margin:20px 0 4px;}
+  .tab{
+    border:0; background:transparent; cursor:pointer; font-family:inherit;
+    font-size:13.5px; font-weight:600; color:var(--sub); padding:7px 0; min-width:132px;
+    border-radius:999px; transition:.25s cubic-bezier(.4,0,.2,1);
+  }
+  .tab:hover{color:var(--txt);}
+  .tab.on{background:var(--card); color:var(--acc); box-shadow:var(--shadow);}
+  html.dark .tab.on{background:#2c2c31;}
   footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
   .credit{color:var(--dim); font-size:11px; text-align:center; padding-bottom:16px; opacity:.8;}
   @media (max-width:640px){
@@ -160,6 +169,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     <span class="tb-sun">☀</span><span class="tb-moon">☾</span><span class="tb-knob"></span>
   </button>
   <div class="err" id="errBox"></div>
+  <div class="tabs" id="tabs"></div>
   <div id="body"><div class="loading"><span class="spin"></span></div></div>
   <footer id="foot"></footer>
   <div class="credit">@torge</div>
@@ -199,19 +209,30 @@ async function refresh(){
 function render(d){
   $('#metaTxt').textContent = '数据更新于 ' + (d.updated||'') ;
   const body = $('#body'); body.innerHTML='';
-  (d.groups||[]).forEach(g=>{
+  const tabsEl = $('#tabs'); tabsEl.innerHTML='';
+  const groups = d.groups||[];
+  const sections = [];
+  groups.forEach((g,i)=>{
     const sect = document.createElement('div'); sect.className='sect';
-    const isCur = (g.month===today.getMonth()+1 && g.year===today.getFullYear());
     const h2 = document.createElement('h2');
-    h2.innerHTML = '<span class="n">'+(isCur?'本月':'下月')+'</span>'+
-      '<span>'+g.month+' 月</span><span class="count">'+g.games.length+' 款</span>';
+    h2.innerHTML = '<span class="n">'+g.month+'</span><span>月 · '+g.year+'</span><span class="count">'+g.games.length+' 款</span>';
     sect.appendChild(h2);
     const list = document.createElement('div'); list.className='list';
     if(!g.games.length) list.innerHTML='<div class="empty">该月暂无已定档发售日</div>';
     else g.games.forEach(it=>list.appendChild(card(it)));
     sect.appendChild(list); body.appendChild(sect);
+    sections.push(sect);
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (i===0 ? ' on' : '');
+    btn.textContent = (i===0 ? '本月' : '下月') + ' · ' + g.month + '月';
+    btn.addEventListener('click', ()=>{
+      sections.forEach((s,j)=>s.style.display = (j===i) ? '' : 'none');
+      tabsEl.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on', b===btn));
+    });
+    tabsEl.appendChild(btn);
   });
-  const total = (d.groups||[]).reduce((s,g)=>s+g.games.length,0);
+  if(sections[1]) sections[1].style.display='none';  // 默认显示本月
+  const total = groups.reduce((s,g)=>s+g.games.length,0);
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
 }
 
