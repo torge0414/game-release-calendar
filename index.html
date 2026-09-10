@@ -328,6 +328,13 @@ function tabbed(tabsEl, panels){
   };
   const switchTo = (i, animate, opts)=>{
     opts = opts || {};
+    if(opts.onlyBody){
+      /* 只把某个视图的列表归位(不碰月签/记忆/别的视图), 用于切视图后旧视图的延迟归位 */
+      const p = panels.find(x=>x.body === opts.onlyBody);
+      if(p) applyIdx(p, i, false);
+      fitAll();
+      return;
+    }
     if(i === curIdx && !opts.force) return;
     if(animate === undefined) animate = true;
     panels.forEach(p=>{
@@ -601,7 +608,7 @@ async function refreshMovies(){
       /* 月份重置: 新视图立即归位(它刚从透明淡入, 看不到); 旧视图正在淡出, 等动画结束再归位(否则会闪出"本月"列表) */
       const oldBody = forward ? document.getElementById('body') : document.getElementById('movieBody');
       if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ skipBody: oldBody });
-      setTimeout(()=>{ if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ force: true }); }, 700);
+      setTimeout(()=>{ if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ onlyBody: oldBody }); }, 700);
     } else {
       PAGE_CLASSES.forEach(c=>{ cur.classList.remove(c); nxt.classList.remove(c); });
       nxt.classList.add('on');
