@@ -191,19 +191,21 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
       <button class="tab" data-view="movie">电影</button>
     </div>
   </header>
-  <div id="viewGame">
+  <div class="pages" id="viewStack">
+  <div class="page on" id="viewGame">
     <div class="meta"><span id="metaTxt"></span><span class="msep">·</span><span>每月初自动更新</span></div>
     <div class="err" id="errBox"></div>
     <div class="tabs" id="tabs"></div>
     <div id="body"><div class="loading"><span class="spin"></span></div></div>
     <footer id="foot"></footer>
   </div>
-  <div id="viewMovie" style="display:none">
+  <div class="page" id="viewMovie">
     <div class="meta"><span id="mmeta"></span><span class="msep">·</span><span>每月初自动更新</span></div>
     <div class="err" id="mErrBox"></div>
     <div class="tabs" id="mtabs"></div>
     <div id="movieBody"><div class="loading"><span class="spin"></span></div></div>
     <footer id="mfoot"></footer>
+  </div>
   </div>
   <div class="credit">@torge</div>
 </div>
@@ -304,12 +306,19 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
   return fit;
 }
 
+function stackFit(){
+  const stack = document.getElementById('viewStack');
+  const on = stack && stack.querySelector('.page.on');
+  if(stack && on) stack.style.height = on.offsetHeight + 'px';
+}
+
 function render(d){
   $('#metaTxt').textContent = '数据更新于 ' + (d.updated||'') ;
   const groups = d.groups||[];
   tabbed($('#tabs'), $('#body'), groups, card, '款');
   const total = groups.reduce((s,g)=>s+(g.games||[]).length,0);
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
+  stackFit();
 }
 
 function card(it){
@@ -426,6 +435,7 @@ function renderMovies(d){
   tabbed($('#mtabs'), $('#movieBody'), groups, mcard, '部');
   const total = groups.reduce((s,g)=>s+(g.movies||[]).length,0);
   $('#mfoot').textContent = '共 '+total+' 部 · 评分与信息来自豆瓣';
+  stackFit();
 }
 
 let moviesLoaded = false;
@@ -444,22 +454,36 @@ async function refreshMovies(){
   }
 }
 
-/* 顶层切换: 游戏 / 电影 */
+/* 顶层切换: 游戏 / 电影 (交叉重叠过渡, 与本月/下月页签同款) */
 (function(){
   const top = document.getElementById('topTabs');
   if(!top) return;
   const btns = Array.from(top.querySelectorAll('.tab'));
+  let curView = 'game';
   btns.forEach(btn=>btn.addEventListener('click', ()=>{
     const v = btn.dataset.view;
+    if(v === curView) return;
+    const forward = (v === 'movie');
+    const g = document.getElementById('viewGame'), m = document.getElementById('viewMovie');
+    const cur = forward ? g : m, nxt = forward ? m : g;
+    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r');
+    nxt.classList.add(forward ? 'pre-r' : 'pre-l');
+    void nxt.offsetWidth;                      // 强制回流, 让起点生效
+    nxt.classList.remove('pre-r','pre-l');
+    nxt.classList.add('on');
+    cur.classList.remove('on','pre-r','pre-l');
+    cur.classList.add(forward ? 'out-l' : 'out-r');
+    curView = v;
     btns.forEach(b=>b.classList.toggle('on', b===btn));
     moveGlider(top, btn);
-    document.getElementById('viewGame').style.display  = (v==='game')  ? '' : 'none';
-    document.getElementById('viewMovie').style.display = (v==='movie') ? '' : 'none';
-    if(v==='movie') refreshMovies();
-    const fit = (v==='game') ? window['_fit_tabs'] : window['_fit_mtabs'];
-    if(fit) fit();   // 视图从隐藏变可见后重算当前页高度
+    if(v === 'movie') refreshMovies();
+    stackFit();
+    const fit = (v === 'game') ? window['_fit_tabs'] : window['_fit_mtabs'];
+    if(fit) fit();
   }));
   moveGlider(top, top.querySelector('.tab'));
+  window.addEventListener('resize', stackFit);
+  stackFit();
 })();
 
 refresh();
