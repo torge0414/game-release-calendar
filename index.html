@@ -527,6 +527,7 @@ async function refreshMovies(){
 })();
 
 refresh();
+refreshMovies();   // 预渲染电影视图: 首次切换时高度已就位, 避免"先塌后撑"的下沉
 </script>
 </body>
 </html>
