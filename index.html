@@ -151,6 +151,12 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .loading .spin{display:inline-block; width:22px; height:22px; border:2.5px solid var(--spin);
        border-top-color:var(--acc); border-radius:50%; animation:sp .6s linear infinite;}
   @keyframes sp{to{transform:rotate(360deg);}}
+  /* 启动遮罩: 数据就位前盖住整页, 所有布局变化都发生在遮罩下(刷新时看不到元素移动) */
+  #boot{position:fixed; inset:0; background:var(--bg); z-index:99; display:flex;
+       align-items:center; justify-content:center; transition:opacity .35s ease;}
+  #boot.hide{opacity:0; pointer-events:none;}
+  #boot .spin{display:inline-block; width:26px; height:26px; border:2.5px solid var(--spin);
+       border-top-color:var(--acc); border-radius:50%; animation:sp .6s linear infinite;}
   .err{background:#fff2f0; border:1px solid #ffd7d2; color:#c0422a; padding:11px 16px;
        border-radius:12px; font-size:13px; margin-top:14px; display:none; text-align:center;}
   .tabs{display:flex; width:max-content; margin:20px auto 2px; background:var(--switch-bg);
@@ -181,6 +187,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
 </style>
 </head>
 <body>
+<div id="boot"><span class="spin"></span></div>
 <div class="wrap">
   <button class="theme-btn" id="themeBtn" title="切换外观" aria-label="切换浅色/夜间模式">
     <span class="tb-sun">☀</span><span class="tb-moon">☾</span><span class="tb-knob"></span>
@@ -241,6 +248,7 @@ async function refresh(){
     $('#errBox').textContent='获取失败：'+e.message;
     $('#errBox').style.display='block';
     showCredit();
+    hideBoot();
   }
 }
 
@@ -314,12 +322,27 @@ function showCredit(){
   if(c) c.classList.add('show');
 }
 
-function stackFit(){
+/* 数据就位后淡出启动遮罩 */
+function hideBoot(){
+  const b = document.getElementById('boot');
+  if(b) setTimeout(()=>b.classList.add('hide'), 60);
+}
+
+function stackFit(instant){
   const stack = document.getElementById('viewStack');
   if(!stack) return;
   /* 只认直接子视图, 不能用 querySelector('.page.on')——会误命中嵌套的子页签页(viewGame/viewMovie 内部) */
   const on = Array.from(stack.children).find(el=>el.classList.contains('on'));
-  if(on) stack.style.height = on.offsetHeight + 'px';
+  if(!on) return;
+  if(instant && !window._stackInit){
+    stack.style.transition = 'none';         // 首次定位不做高度动画(遮罩下完成)
+    stack.style.height = on.offsetHeight + 'px';
+    void stack.offsetWidth;
+    stack.style.transition = '';
+    window._stackInit = true;
+  } else {
+    stack.style.height = on.offsetHeight + 'px';
+  }
 }
 
 function render(d){
@@ -329,7 +352,8 @@ function render(d){
   const total = groups.reduce((s,g)=>s+(g.games||[]).length,0);
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
   showCredit();
-  stackFit();
+  stackFit(true);
+  hideBoot();
 }
 
 function card(it){
@@ -447,7 +471,8 @@ function renderMovies(d){
   const total = groups.reduce((s,g)=>s+(g.movies||[]).length,0);
   $('#mfoot').textContent = '共 '+total+' 部 · 评分与信息来自豆瓣';
   showCredit();
-  stackFit();
+  stackFit(true);
+  hideBoot();
 }
 
 let moviesLoaded = false;
