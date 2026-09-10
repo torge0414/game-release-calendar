@@ -90,6 +90,8 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .page.anim-in-l{animation:inL .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
   .page.anim-out-l{animation:outL .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
   .page.anim-out-r{animation:outR .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
+  /* 静态隐藏态: 恢复视图时用, 绝不能带动画(否则刷新会补播一次淡出) */
+  .page.off{opacity:0; pointer-events:none; transform:translateX(-44px); animation:none; transition:none;}
   /* 内容区初始就占满视口: 加载期间底部署名不在首屏内, 避免刷新时的跳动/闪烁 */
   #viewStack{min-height:calc(100vh - 100px);}
   .h2c{font-size:12.5px; color:var(--dim); font-weight:500; text-align:center; margin:0 0 12px; padding-top:16px;}
@@ -323,7 +325,7 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
     tabsEl.appendChild(btn);
   });
   bodyEl.appendChild(pagesEl);
-  if(curIdx !== 0 && sections[0]) sections[0].classList.add('anim-out-r');   // 恢复的隐藏页置淡出态
+  if(curIdx !== 0 && sections[0]) sections[0].classList.add('off');   // 恢复的隐藏页静态隐藏(无动画)
   fit();  // 首屏高度
   if(window[key]) window.removeEventListener('resize', window[key]);
   window[key] = fit;
@@ -352,7 +354,7 @@ function stackFit(){
   stack.style.height = on.offsetHeight + 'px';   // 瞬时, 不做高度动画
 }
 
-const PAGE_CLASSES = ['on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l','anim-out-l','anim-out-r'];
+const PAGE_CLASSES = ['on','off','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l','anim-out-l','anim-out-r'];
 
 /* 交叉重叠过渡: 旧页出场 + 新页进场(都用 keyframes, 每次强制重播) */
 function animSwap(cur, nxt, forward){
@@ -555,7 +557,7 @@ async function refreshMovies(){
     } else {
       PAGE_CLASSES.forEach(c=>{ cur.classList.remove(c); nxt.classList.remove(c); });
       nxt.classList.add('on');
-      cur.classList.add(forward ? 'anim-out-l' : 'anim-out-r');   // 静态隐藏(动画终态)
+      cur.classList.add('off');          // 静态隐藏(无动画), 刷新恢复时不会补播淡出
     }
     curView = v;
     btns.forEach(b=>b.classList.toggle('on', b.dataset.view === v));
