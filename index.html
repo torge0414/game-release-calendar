@@ -76,21 +76,22 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   /* 页切换: 两列表叠放交叉过渡(重叠淡入淡出); 容器高度瞬时调整, 不做高度动画(否则下方内容会慢慢滑=下沉感) */
   .pages{position:relative;}
   .page{position:absolute; top:0; left:0; width:100%; opacity:0; pointer-events:none;
-        transform:translateX(0);
+        transform:translateX(0); margin-top:0;
         transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
   .page.on{position:relative; opacity:1; pointer-events:auto; transform:translateX(0);}  /* 活动页留在文档流, 避免加载瞬间容器塌陷(底部元素上跳) */
   .page.pre-r{opacity:0; transform:translateX(44px);}
   .page.pre-l{opacity:0; transform:translateX(-44px);}
-  .page.out-l{opacity:0; transform:translateX(-44px);}
-  .page.out-r{opacity:0; transform:translateX(44px);}
   /* 进场用 keyframes(不受 position 切换影响, transition 的起始值会被吞掉) */
   @keyframes inR{from{opacity:0; transform:translateX(44px);} to{opacity:1; transform:translateX(0);}}
   @keyframes inL{from{opacity:0; transform:translateX(-44px);} to{opacity:1; transform:translateX(0);}}
   .page.anim-in-r{animation:inR .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
   .page.anim-in-l{animation:inL .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
+  /* 出场规则必须在动画类之后: 否则 animation(fill:both) 会压住淡出, 旧页残留可见 → 两列表重叠 */
+  .page.out-l{opacity:0; transform:translateX(-44px); animation:none; transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
+  .page.out-r{opacity:0; transform:translateX(44px); animation:none; transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
   /* 内容区初始就占满视口: 加载期间底部署名不在首屏内, 避免刷新时的跳动/闪烁 */
   #viewStack{min-height:calc(100vh - 100px);}
-  .h2c{font-size:12.5px; color:var(--dim); font-weight:500; text-align:center; margin:0 0 12px;}
+  .h2c{font-size:12.5px; color:var(--dim); font-weight:500; text-align:center; margin:0 0 12px; padding-top:16px;}
   .sect h2{
     font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-.01em;
     display:flex; align-items:baseline; gap:10px; margin:0 6px 14px;
@@ -279,8 +280,8 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
     if(i===curIdx || !sections[i]) return;
     const forward = i > curIdx;
     const cur = sections[curIdx], nxt = sections[i];
-    // 旧页先脱离文档流(去 on → absolute), 避免两页同时占位把页面撑高(下沉重播)
-    cur.classList.remove('on','pre-r','pre-l');
+    // 旧页先脱离文档流(去 on → absolute), 避免两页同时占位把页面撑高(下沉重播); 同时清掉进场动画类
+    cur.classList.remove('on','pre-r','pre-l','anim-in-r','anim-in-l');
     cur.classList.add(forward ? 'out-l' : 'out-r');
     // 新页: 从侧边滑入(与旧页淡出重叠交叉); keyframes 动画, 起始位移不会被吞
     nxt.classList.remove('on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l');
@@ -499,8 +500,8 @@ async function refreshMovies(){
     const forward = (v === 'movie');
     const g = document.getElementById('viewGame'), m = document.getElementById('viewMovie');
     const cur = forward ? g : m, nxt = forward ? m : g;
-    // 旧视图先脱离文档流, 避免两个视图同时占位把页面撑高(下沉重播)
-    cur.classList.remove('on','pre-r','pre-l');
+    // 旧视图先脱离文档流(去 on → absolute), 避免两视图同时占位把页面撑高(下沉重播); 同时清掉进场动画类
+    cur.classList.remove('on','pre-r','pre-l','anim-in-r','anim-in-l');
     cur.classList.add(forward ? 'out-l' : 'out-r');
     nxt.classList.remove('on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l');
     void nxt.offsetWidth;                      // 强制回流, 保证动画重新开始
