@@ -186,6 +186,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .tabs.top{margin:12px auto 2px;}
   .pic.m{flex:0 0 68px; width:68px; height:100px;}
   .pic.m .ph{font-size:20px;}
+  .item.mv{align-items:flex-start;}   /* 电影: 信息与封面顶对齐 */
   footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
   .credit{color:var(--dim); font-size:11px; text-align:center; padding-bottom:16px; opacity:.8;}
   @media (max-width:640px){
@@ -452,7 +453,7 @@ function minfo(s){
 }
 
 function mcard(it){
-  const wrap = document.createElement('div'); wrap.className='item';
+  const wrap = document.createElement('div'); wrap.className='item mv';
   const sc = (typeof it.score==='number' && it.score>0) ? it.score : null;
   if(it.day===today.getDate() && it.month===today.getMonth()+1) wrap.classList.add('today');
   const date = new Date(it.year, it.month-1, it.day);
