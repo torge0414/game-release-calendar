@@ -73,8 +73,8 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
        justify-content:center; gap:7px;}
   .meta .msep{opacity:.5;}
   .sect{margin-top:16px;}
-  /* 页切换: 两列表叠放交叉过渡(重叠淡入淡出) */
-  .pages{position:relative; transition:height .6s cubic-bezier(.4,0,.2,1);}
+  /* 页切换: 两列表叠放交叉过渡(重叠淡入淡出); 容器高度瞬时调整, 不做高度动画(否则下方内容会慢慢滑=下沉感) */
+  .pages{position:relative;}
   .page{position:absolute; top:0; left:0; width:100%; opacity:0; pointer-events:none;
         transform:translateX(0);
         transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
@@ -83,6 +83,11 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .page.pre-l{opacity:0; transform:translateX(-44px);}
   .page.out-l{opacity:0; transform:translateX(-44px);}
   .page.out-r{opacity:0; transform:translateX(44px);}
+  /* 进场用 keyframes(不受 position 切换影响, transition 的起始值会被吞掉) */
+  @keyframes inR{from{opacity:0; transform:translateX(44px);} to{opacity:1; transform:translateX(0);}}
+  @keyframes inL{from{opacity:0; transform:translateX(-44px);} to{opacity:1; transform:translateX(0);}}
+  .page.anim-in-r{animation:inR .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
+  .page.anim-in-l{animation:inL .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
   /* 内容区初始就占满视口: 加载期间底部署名不在首屏内, 避免刷新时的跳动/闪烁 */
   #viewStack{min-height:calc(100vh - 100px);}
   .h2c{font-size:12.5px; color:var(--dim); font-weight:500; text-align:center; margin:0 0 12px;}
@@ -277,11 +282,10 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
     // 旧页先脱离文档流(去 on → absolute), 避免两页同时占位把页面撑高(下沉重播)
     cur.classList.remove('on','pre-r','pre-l');
     cur.classList.add(forward ? 'out-l' : 'out-r');
-    // 新页: 从侧边滑入(与旧页淡出重叠交叉)
-    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r');
-    nxt.classList.add(forward ? 'pre-r' : 'pre-l');
-    void nxt.offsetWidth;                       // 强制回流, 让起点生效
-    nxt.classList.remove('pre-r','pre-l');
+    // 新页: 从侧边滑入(与旧页淡出重叠交叉); keyframes 动画, 起始位移不会被吞
+    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l');
+    void nxt.offsetWidth;                       // 强制回流, 保证动画重新开始
+    nxt.classList.add(forward ? 'anim-in-r' : 'anim-in-l');
     nxt.classList.add('on');
     curIdx = i;
     fit();
@@ -328,21 +332,13 @@ function hideBoot(){
   if(b) setTimeout(()=>b.classList.add('hide'), 60);
 }
 
-function stackFit(instant){
+function stackFit(){
   const stack = document.getElementById('viewStack');
   if(!stack) return;
   /* 只认直接子视图, 不能用 querySelector('.page.on')——会误命中嵌套的子页签页(viewGame/viewMovie 内部) */
   const on = Array.from(stack.children).find(el=>el.classList.contains('on'));
   if(!on) return;
-  if(instant && !window._stackInit){
-    stack.style.transition = 'none';         // 首次定位不做高度动画(遮罩下完成)
-    stack.style.height = on.offsetHeight + 'px';
-    void stack.offsetWidth;
-    stack.style.transition = '';
-    window._stackInit = true;
-  } else {
-    stack.style.height = on.offsetHeight + 'px';
-  }
+  stack.style.height = on.offsetHeight + 'px';   // 瞬时, 不做高度动画
 }
 
 function render(d){
@@ -352,7 +348,7 @@ function render(d){
   const total = groups.reduce((s,g)=>s+(g.games||[]).length,0);
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
   showCredit();
-  stackFit(true);
+  stackFit();
   hideBoot();
 }
 
@@ -471,7 +467,7 @@ function renderMovies(d){
   const total = groups.reduce((s,g)=>s+(g.movies||[]).length,0);
   $('#mfoot').textContent = '共 '+total+' 部 · 评分与信息来自豆瓣';
   showCredit();
-  stackFit(true);
+  stackFit();
   hideBoot();
 }
 
@@ -506,16 +502,17 @@ async function refreshMovies(){
     // 旧视图先脱离文档流, 避免两个视图同时占位把页面撑高(下沉重播)
     cur.classList.remove('on','pre-r','pre-l');
     cur.classList.add(forward ? 'out-l' : 'out-r');
-    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r');
-    nxt.classList.add(forward ? 'pre-r' : 'pre-l');
-    void nxt.offsetWidth;                      // 强制回流, 让起点生效
-    nxt.classList.remove('pre-r','pre-l');
+    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l');
+    void nxt.offsetWidth;                      // 强制回流, 保证动画重新开始
+    nxt.classList.add(forward ? 'anim-in-r' : 'anim-in-l');
     nxt.classList.add('on');
     curView = v;
     btns.forEach(b=>b.classList.toggle('on', b===btn));
     moveGlider(top, btn);
     if(v === 'movie') refreshMovies();
-    stackFit();
+    /* 直接用新视图高度(此时它还没拿到 on, stackFit 认不出), 高度瞬时调整 */
+    const stack = document.getElementById('viewStack');
+    if(stack) stack.style.height = nxt.offsetHeight + 'px';
     const fit = (v === 'game') ? window['_fit_tabs'] : window['_fit_mtabs'];
     if(fit) fit();
   }));
