@@ -469,7 +469,7 @@ function mcard(it){
       '<span class="mcv">'+sc.toFixed(1)+'</span></a>' : '';
   const mi = minfoParts(it.info);
   const line2 = '<span>'+it.month+'月'+it.day+'日'+(mi.region?' · '+esc(mi.region):'')+'</span>';
-  const line3 = [mi.kind, mi.director].filter(Boolean).join(' · ');
+  const line3 = mi.kind;   // 第三行只留类型(导演去掉)
   wrap.innerHTML =
     '<div class="pic m">'+img+
       '<div class="ph" style="background:'+phColor(it.title)+(it.poster?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
