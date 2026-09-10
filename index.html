@@ -171,7 +171,8 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .pic.m{flex:0 0 68px; width:68px; height:100px;}
   .pic.m .ph{font-size:20px;}
   footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
-  .credit{color:var(--dim); font-size:11px; text-align:center; padding-bottom:16px; opacity:.8;}
+  .credit{color:var(--dim); font-size:11px; text-align:center; padding-bottom:16px; opacity:0; transition:opacity .6s;}
+  .credit.show{opacity:.8;}
   @media (max-width:640px){
     h1{font-size:32px;}
     .pic{flex-basis:116px; width:116px; height:58px;}
@@ -240,6 +241,7 @@ async function refresh(){
   }catch(e){
     $('#errBox').textContent='获取失败：'+e.message;
     $('#errBox').style.display='block';
+    showCredit();
   }
 }
 
@@ -308,6 +310,11 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
   return fit;
 }
 
+function showCredit(){
+  const c = document.querySelector('.credit');
+  if(c) c.classList.add('show');
+}
+
 function stackFit(){
   const stack = document.getElementById('viewStack');
   const on = stack && stack.querySelector('.page.on');
@@ -320,6 +327,7 @@ function render(d){
   tabbed($('#tabs'), $('#body'), groups, card, '款');
   const total = groups.reduce((s,g)=>s+(g.games||[]).length,0);
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
+  showCredit();
   stackFit();
 }
 
@@ -437,6 +445,7 @@ function renderMovies(d){
   tabbed($('#mtabs'), $('#movieBody'), groups, mcard, '部');
   const total = groups.reduce((s,g)=>s+(g.movies||[]).length,0);
   $('#mfoot').textContent = '共 '+total+' 部 · 评分与信息来自豆瓣';
+  showCredit();
   stackFit();
 }
 
