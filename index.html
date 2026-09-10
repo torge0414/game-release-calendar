@@ -134,6 +134,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
        flex-wrap:wrap;}
   .txt .tag b{color:var(--today); font-weight:700;}
   .txt .tag .mc{display:none;}
+  .txt .tag.tag3{margin-top:2px; padding-right:56px;}   /* 给右下角评分块让位 */
   .mcbox{position:absolute; right:18px; bottom:14px; border-radius:13px; padding:8px 4px 11px;
        min-width:50px; color:#fff; display:flex; align-items:center; justify-content:center;
        line-height:1; z-index:2; box-shadow:0 2px 8px rgba(0,0,0,.18); text-decoration:none;}
@@ -438,9 +439,14 @@ function ckw(img){
 }
 
 /* ---------- 电影(豆瓣) ---------- */
+function minfoParts(s){
+  const p = String(s||'').split('/').map(x=>x.trim()).filter(Boolean);
+  return { region: p[1] || '', kind: p[2] || '', director: p[3] || '' };   // 副标题: 年份/地区/类型/导演/主演
+}
+
 function minfo(s){
   const p = String(s||'').split('/').map(x=>x.trim()).filter(Boolean);
-  return p.slice(1,4).join(' · ');   // 去掉首段年份, 取 地区 · 类型 · 导演
+  return p.slice(1,4).join(' · ');
 }
 
 function mcard(it){
@@ -461,13 +467,17 @@ function mcard(it){
   const mc = sc!=null ? '<a class="mcbox '+(sc>=8?'g':(sc>=6?'y':'r'))+'" href="'+esc(it.url||'https://movie.douban.com/')+
       '" target="_blank" rel="noopener" title="豆瓣评分 '+sc+'">'+
       '<span class="mcv">'+sc.toFixed(1)+'</span></a>' : '';
+  const mi = minfoParts(it.info);
+  const line2 = '<span>'+it.month+'月'+it.day+'日'+(mi.region?' · '+esc(mi.region):'')+'</span>';
+  const line3 = [mi.kind, mi.director].filter(Boolean).join(' · ');
   wrap.innerHTML =
     '<div class="pic m">'+img+
       '<div class="ph" style="background:'+phColor(it.title)+(it.poster?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
     '</div>'+
     '<div class="txt">'+
       '<div class="tline"><div class="t"></div>'+whenTag+'</div>'+
-      '<div class="tag"><span>'+it.month+'月'+it.day+'日'+(it.info?' · '+esc(minfo(it.info)):'')+'</span></div>'+
+      '<div class="tag">'+line2+'</div>'+
+      (line3?'<div class="tag tag3"><span>'+esc(line3)+'</span></div>':'')+
     '</div>'+mc;
   wrap.querySelector('.t').textContent = it.title;
   return wrap;
