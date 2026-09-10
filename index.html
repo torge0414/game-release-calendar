@@ -40,7 +40,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   body{
     background:var(--bg); color:var(--txt); min-width:320px;
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro SC","Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    -webkit-font-smoothing:antialiased; padding:26px 20px 44px;
+    -webkit-font-smoothing:antialiased; padding:26px 20px 44px; overflow-x:hidden;
   }
   .wrap{max-width:860px; margin:0 auto; position:relative;}
   .theme-btn{
@@ -73,8 +73,16 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
        justify-content:center; gap:7px;}
   .meta .msep{opacity:.5;}
   .sect{margin-top:16px;}
-  @keyframes slideInR{from{opacity:0; transform:translateX(38px);}to{opacity:1; transform:translateX(0);}}
-  @keyframes slideInL{from{opacity:0; transform:translateX(-38px);}to{opacity:1; transform:translateX(0);}}
+  /* 页切换: 两列表叠放交叉过渡(重叠淡入淡出) */
+  .pages{position:relative; transition:height .6s cubic-bezier(.4,0,.2,1);}
+  .page{position:absolute; top:0; left:0; width:100%; opacity:0; pointer-events:none;
+        transform:translateX(0);
+        transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
+  .page.on{opacity:1; pointer-events:auto; transform:translateX(0);}
+  .page.pre-r{opacity:0; transform:translateX(44px);}
+  .page.pre-l{opacity:0; transform:translateX(-44px);}
+  .page.out-l{opacity:0; transform:translateX(-44px);}
+  .page.out-r{opacity:0; transform:translateX(44px);}
   .h2c{font-size:12.5px; color:var(--dim); font-weight:500; text-align:center; margin:0 0 12px;}
   .sect h2{
     font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-.01em;
@@ -230,31 +238,53 @@ function render(d){
   tabsEl.innerHTML = '<span class="tabg"></span>';  // 滑块层
   const groups = d.groups||[];
   const sections = [];
+  const pagesEl = document.createElement('div'); pagesEl.className='pages';
+  let curIdx = 0;
+
+  const fit = ()=>{
+    if(sections[curIdx]) pagesEl.style.height = sections[curIdx].offsetHeight + 'px';
+  };
+  const switchTo = (i)=>{
+    if(i===curIdx || !sections[i]) return;
+    const forward = i > curIdx;
+    const cur = sections[curIdx], nxt = sections[i];
+    // 新页: 从侧边滑入(与旧页淡出重叠交叉)
+    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r');
+    nxt.classList.add(forward ? 'pre-r' : 'pre-l');
+    void nxt.offsetWidth;                       // 强制回流, 让起点生效
+    nxt.classList.remove('pre-r','pre-l');
+    nxt.classList.add('on');
+    // 旧页: 向反方向滑出淡出
+    cur.classList.remove('on','pre-r','pre-l');
+    cur.classList.add(forward ? 'out-l' : 'out-r');
+    curIdx = i;
+    fit();
+    tabsEl.querySelectorAll('.tab').forEach((b,j)=>b.classList.toggle('on', j===i));
+    moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[i]);
+  };
+
   groups.forEach((g,i)=>{
-    const sect = document.createElement('div'); sect.className='sect';
+    const sect = document.createElement('div');
+    sect.className = 'sect page' + (i===0 ? ' on' : '');
     const h2 = document.createElement('div'); h2.className='h2c';
     h2.textContent = g.games.length+' 款';
     sect.appendChild(h2);
     const list = document.createElement('div'); list.className='list';
     if(!g.games.length) list.innerHTML='<div class="empty">该月暂无已定档发售日</div>';
     else g.games.forEach(it=>list.appendChild(card(it)));
-    sect.appendChild(list); body.appendChild(sect);
+    sect.appendChild(list); pagesEl.appendChild(sect);
     sections.push(sect);
     const btn = document.createElement('button');
     btn.className = 'tab' + (i===0 ? ' on' : '');
     btn.textContent = (i===0 ? '本月' : '下月') + ' · ' + g.month + '月';
-    btn.addEventListener('click', ()=>{
-      sections.forEach((s,j)=>s.style.display = (j===i) ? '' : 'none');
-      const tgt = sections[i];
-      tgt.style.animation = 'none';
-      void tgt.offsetWidth;  // 重置动画
-      tgt.style.animation = (i===1 ? 'slideInR' : 'slideInL') + ' .6s cubic-bezier(.4,0,.2,1)';
-      tabsEl.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on', b===btn));
-      moveGlider(tabsEl, btn);
-    });
+    btn.addEventListener('click', ()=>switchTo(i));
     tabsEl.appendChild(btn);
   });
-  if(sections[1]) sections[1].style.display='none';  // 默认显示本月
+  body.appendChild(pagesEl);
+  fit();  // 首屏高度
+  if(window._glwFit) window.removeEventListener('resize', window._glwFit);
+  window._glwFit = fit;
+  window.addEventListener('resize', fit);
   moveGlider(tabsEl, tabsEl.querySelector('.tab'));
   const total = groups.reduce((s,g)=>s+g.games.length,0);
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
