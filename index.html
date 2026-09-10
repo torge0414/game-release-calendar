@@ -165,6 +165,9 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   }
   .tab:hover{color:var(--txt);}
   .tab.on{color:var(--txt);}
+  .tabs.top{margin:12px auto 2px;}
+  .pic.m{flex:0 0 68px; width:68px; height:100px;}
+  .pic.m .ph{font-size:20px;}
   footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
   .credit{color:var(--dim); font-size:11px; text-align:center; padding-bottom:16px; opacity:.8;}
   @media (max-width:640px){
@@ -182,13 +185,28 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   </button>
   <header>
     <h1>RELEASE CALENDAR</h1>
+    <div class="tabs top" id="topTabs">
+      <span class="tabg"></span>
+      <button class="tab on" data-view="game">游戏</button>
+      <button class="tab" data-view="movie">电影</button>
+    </div>
+  </header>
+  <div id="viewGame">
     <div class="sub">Steam · PlayStation · Nintendo</div>
     <div class="meta"><span id="metaTxt"></span><span class="msep">·</span><span>每月初自动更新</span></div>
-  </header>
-  <div class="err" id="errBox"></div>
-  <div class="tabs" id="tabs"></div>
-  <div id="body"><div class="loading"><span class="spin"></span></div></div>
-  <footer id="foot"></footer>
+    <div class="err" id="errBox"></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="body"><div class="loading"><span class="spin"></span></div></div>
+    <footer id="foot"></footer>
+  </div>
+  <div id="viewMovie" style="display:none">
+    <div class="sub">豆瓣电影 · 正在上映 &amp; 即将上映</div>
+    <div class="meta"><span id="mmeta"></span><span class="msep">·</span><span>每月初自动更新</span></div>
+    <div class="err" id="mErrBox"></div>
+    <div class="tabs" id="mtabs"></div>
+    <div id="movieBody"><div class="loading"><span class="spin"></span></div></div>
+    <footer id="mfoot"></footer>
+  </div>
   <div class="credit">@torge</div>
 </div>
 
@@ -230,12 +248,10 @@ function moveGlider(tabsEl, btn){
   g.style.transform = 'translateX(' + (btn.offsetLeft - 3) + 'px)';
 }
 
-function render(d){
-  $('#metaTxt').textContent = '数据更新于 ' + (d.updated||'') ;
-  const body = $('#body'); body.innerHTML='';
-  const tabsEl = $('#tabs'); tabsEl.innerHTML='';
+/* 通用: 本月/下月页签 + 交叉重叠过渡(游戏/电影共用); makeCard 造卡片, unit 计数单位 */
+function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
+  bodyEl.innerHTML='';
   tabsEl.innerHTML = '<span class="tabg"></span>';  // 滑块层
-  const groups = d.groups||[];
   const sections = [];
   const pagesEl = document.createElement('div'); pagesEl.className='pages';
   let curIdx = 0;
@@ -263,14 +279,15 @@ function render(d){
   };
 
   groups.forEach((g,i)=>{
+    const items = g.games || g.movies || [];
     const sect = document.createElement('div');
     sect.className = 'sect page' + (i===0 ? ' on' : '');
     const h2 = document.createElement('div'); h2.className='h2c';
-    h2.textContent = g.games.length+' 款';
+    h2.textContent = items.length + ' ' + unit;
     sect.appendChild(h2);
     const list = document.createElement('div'); list.className='list';
-    if(!g.games.length) list.innerHTML='<div class="empty">该月暂无已定档发售日</div>';
-    else g.games.forEach(it=>list.appendChild(card(it)));
+    if(!items.length) list.innerHTML='<div class="empty">该月暂无已定档</div>';
+    else items.forEach(it=>list.appendChild(makeCard(it)));
     sect.appendChild(list); pagesEl.appendChild(sect);
     sections.push(sect);
     const btn = document.createElement('button');
@@ -279,13 +296,21 @@ function render(d){
     btn.addEventListener('click', ()=>switchTo(i));
     tabsEl.appendChild(btn);
   });
-  body.appendChild(pagesEl);
+  bodyEl.appendChild(pagesEl);
   fit();  // 首屏高度
-  if(window._glwFit) window.removeEventListener('resize', window._glwFit);
-  window._glwFit = fit;
+  const key = '_fit_' + (tabsEl.id || 'x');
+  if(window[key]) window.removeEventListener('resize', window[key]);
+  window[key] = fit;
   window.addEventListener('resize', fit);
   moveGlider(tabsEl, tabsEl.querySelector('.tab'));
-  const total = groups.reduce((s,g)=>s+g.games.length,0);
+  return fit;
+}
+
+function render(d){
+  $('#metaTxt').textContent = '数据更新于 ' + (d.updated||'') ;
+  const groups = d.groups||[];
+  tabbed($('#tabs'), $('#body'), groups, card, '款');
+  const total = groups.reduce((s,g)=>s+(g.games||[]).length,0);
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
 }
 
@@ -360,6 +385,84 @@ function ckw(img){
     }
   }catch(e){}
 }
+
+/* ---------- 电影(豆瓣) ---------- */
+function minfo(s){
+  const p = String(s||'').split('/').map(x=>x.trim()).filter(Boolean);
+  return p.slice(1,4).join(' · ');   // 去掉首段年份, 取 地区 · 类型 · 导演
+}
+
+function mcard(it){
+  const wrap = document.createElement('div'); wrap.className='item';
+  const sc = (typeof it.score==='number' && it.score>0) ? it.score : null;
+  if(it.day===today.getDate() && it.month===today.getMonth()+1) wrap.classList.add('today');
+  const date = new Date(it.year, it.month-1, it.day);
+  const diff = Math.round((date - new Date(today.getFullYear(),today.getMonth(),today.getDate()))/86400000);
+  let whenTxt='', whenCls='';
+  if(diff===0){ whenTxt='今天上映'; whenCls='today'; }
+  else if(diff===1){ whenTxt='明天上映'; whenCls='today'; }
+  else if(diff>1){ whenTxt='还有 '+diff+' 天'; whenCls='soon'; }
+  else { whenTxt='已上映'; whenCls='out'; }
+  const whenTag = whenCls ? '<span class="when '+whenCls+'">'+whenTxt+'</span>' : '';
+  const img = it.poster
+    ? '<img class="cover" src="'+esc(it.poster)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
+  /* 豆瓣 10 分制: ≥8 绿 / ≥6 黄 / <6 红, 整块跳豆瓣条目页 */
+  const mc = sc!=null ? '<a class="mcbox '+(sc>=8?'g':(sc>=6?'y':'r'))+'" href="'+esc(it.url||'https://movie.douban.com/')+
+      '" target="_blank" rel="noopener" title="豆瓣评分 '+sc+'">'+
+      '<span class="mcv">'+sc.toFixed(1)+'</span></a>' : '';
+  wrap.innerHTML =
+    '<div class="pic m">'+img+
+      '<div class="ph" style="background:'+phColor(it.title)+(it.poster?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
+    '</div>'+
+    '<div class="txt">'+
+      '<div class="tline"><div class="t"></div>'+whenTag+'</div>'+
+      '<div class="tag"><span>'+it.month+'月'+it.day+'日'+(it.info?' · '+esc(minfo(it.info)):'')+'</span></div>'+
+    '</div>'+mc;
+  wrap.querySelector('.t').textContent = it.title;
+  return wrap;
+}
+
+function renderMovies(d){
+  $('#mmeta').textContent = '数据更新于 ' + (d.updated||'');
+  const groups = d.groups||[];
+  tabbed($('#mtabs'), $('#movieBody'), groups, mcard, '部');
+  const total = groups.reduce((s,g)=>s+(g.movies||[]).length,0);
+  $('#mfoot').textContent = '共 '+total+' 部 · 评分与信息来自豆瓣';
+}
+
+let moviesLoaded = false;
+async function refreshMovies(){
+  if(moviesLoaded) return;
+  const box = $('#mErrBox');
+  box.style.display='none';
+  try{
+    const r = await fetch('movies.json'); const d = await r.json();
+    if(d.error) throw new Error(d.error);
+    renderMovies(d);
+    moviesLoaded = true;
+  }catch(e){
+    box.textContent='获取失败：'+e.message;
+    box.style.display='block';
+  }
+}
+
+/* 顶层切换: 游戏 / 电影 */
+(function(){
+  const top = document.getElementById('topTabs');
+  if(!top) return;
+  const btns = Array.from(top.querySelectorAll('.tab'));
+  btns.forEach(btn=>btn.addEventListener('click', ()=>{
+    const v = btn.dataset.view;
+    btns.forEach(b=>b.classList.toggle('on', b===btn));
+    moveGlider(top, btn);
+    document.getElementById('viewGame').style.display  = (v==='game')  ? '' : 'none';
+    document.getElementById('viewMovie').style.display = (v==='movie') ? '' : 'none';
+    if(v==='movie') refreshMovies();
+    const fit = (v==='game') ? window['_fit_tabs'] : window['_fit_mtabs'];
+    if(fit) fit();   // 视图从隐藏变可见后重算当前页高度
+  }));
+  moveGlider(top, top.querySelector('.tab'));
+})();
 
 refresh();
 </script>
