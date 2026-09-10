@@ -124,8 +124,9 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .txt .tline{display:flex; align-items:center; gap:8px; min-width:0;}
   .txt .tline .t{font-size:15.5px; font-weight:600; letter-spacing:-.01em; line-height:1.3;
        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
-  .txt .when{flex:none; margin-left:auto; font-size:10.5px; font-weight:700; border-radius:7px; padding:2px 8px;
-       line-height:1.4; letter-spacing:.01em; white-space:nowrap;}
+  .txt .when{position:absolute; right:18px; top:14px; flex:none; font-size:10.5px; font-weight:700; border-radius:7px; padding:2px 8px;
+       line-height:1.4; letter-spacing:.01em; white-space:nowrap; z-index:2;}
+  .txt .tline.haswhen .t{padding-right:64px;}   /* 有徽章时给右上角让位 */
   .when.soon{background:var(--acc-bg); color:var(--acc);}
   .when.today{background:#fff0dd; color:#b26a00;}
   html.dark .when.today{background:#4a320f; color:#ffc46b;}
@@ -409,7 +410,7 @@ function card(it){
       '<div class="ph" style="background:'+phColor(it.title)+(imgUrl?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
     '</div>'+
     '<div class="txt">'+
-      '<div class="tline"><div class="t"></div>'+whenTag+'</div>'+
+      '<div class="tline'+(whenTag?' haswhen':'')+'"><div class="t"></div>'+whenTag+'</div>'+
       '<div class="tag"><span>'+it.month+'月'+it.day+'日'+(it.dev?' · '+esc(it.dev):'')+'</span></div>'+
       (chips?'<div class="plats">'+chips+'</div>':'')+
     '</div>'+mcBox;
@@ -476,7 +477,7 @@ function mcard(it){
       '<div class="ph" style="background:'+phColor(it.title)+(it.poster?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
     '</div>'+
     '<div class="txt">'+
-      '<div class="tline"><div class="t"></div>'+whenTag+'</div>'+
+      '<div class="tline'+(whenTag?' haswhen':'')+'"><div class="t"></div>'+whenTag+'</div>'+
       '<div class="tag">'+line2+'</div>'+
       (line3?'<div class="tag tag3"><span>'+esc(line3)+'</span></div>':'')+
     '</div>'+mc;
