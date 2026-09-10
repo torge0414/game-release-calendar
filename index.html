@@ -316,8 +316,10 @@ function showCredit(){
 
 function stackFit(){
   const stack = document.getElementById('viewStack');
-  const on = stack && stack.querySelector('.page.on');
-  if(stack && on) stack.style.height = on.offsetHeight + 'px';
+  if(!stack) return;
+  /* 只认直接子视图, 不能用 querySelector('.page.on')——会误命中嵌套的子页签页(viewGame/viewMovie 内部) */
+  const on = Array.from(stack.children).find(el=>el.classList.contains('on'));
+  if(on) stack.style.height = on.offsetHeight + 'px';
 }
 
 function render(d){
