@@ -485,7 +485,13 @@ function mcard(it){
       '<span class="mcv">'+Math.round(sc*10)+'</span></a>' : '';
   const mi = minfoParts(it.info);
   const line2 = '<span>'+it.month+'月'+it.day+'日'+(mi.region?' · '+esc(mi.region):'')+'</span>';
-  const line3 = mi.kind;   // 第三行只留类型(导演去掉)
+  /* 第三行: 优先条目接口的准确类型; 回退副标题第 3 段仅在结构完整(年/地区/类型/导演/演员共 5 段)时可信;
+     否则可能把导演名当类型(如"渔村之恋") → 留空 */
+  const parts = String(it.info||'').split('/').map(s=>s.trim()).filter(Boolean);
+  const genres = (it.genres && it.genres.length)
+    ? it.genres.join(' ')
+    : (parts.length >= 5 ? (parts[2] || '') : '');
+  const line3 = genres;
   wrap.innerHTML =
     '<div class="pic m">'+img+
       '<div class="ph" style="background:'+phColor(it.title)+(it.poster?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
