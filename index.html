@@ -226,7 +226,6 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     <div id="movieBody"><div class="loading"><span class="spin"></span></div></div>
   </div>
   </div>
-  <div class="credit">@torge</div>
 </div>
 
 <script>
@@ -278,10 +277,8 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
   let curIdx = 0;
 
   const fit = ()=>{
-    /* 取所有页的最大高度: 切换时容器高度不变, 页面高度恒定(否则下方内容会随切换跳动=下沉感) */
-    let mx = 0;
-    sections.forEach(s=>{ if(s.offsetHeight > mx) mx = s.offsetHeight; });
-    if(mx) pagesEl.style.height = mx + 'px';
+    /* 高度=当前页(页尾信息与 @torge 都在页内, 容器外没有内容, 所以高度变化不会造成可见位移) */
+    if(sections[curIdx]) pagesEl.style.height = sections[curIdx].offsetHeight + 'px';
   };
   const switchTo = (i)=>{
     if(i===curIdx || !sections[i]) return;
@@ -311,6 +308,8 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
     const ft = document.createElement('div'); ft.className = 'pfoot';
     ft.textContent = footFn ? footFn(g, items) : '';
     sect.appendChild(ft);
+    const cr = document.createElement('div'); cr.className = 'credit'; cr.textContent = '@torge';
+    sect.appendChild(cr);
     sections.push(sect);
     const btn = document.createElement('button');
     btn.className = 'tab' + (i===0 ? ' on' : '');
