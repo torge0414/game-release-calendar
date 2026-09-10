@@ -266,15 +266,15 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
     if(i===curIdx || !sections[i]) return;
     const forward = i > curIdx;
     const cur = sections[curIdx], nxt = sections[i];
+    // 旧页先脱离文档流(去 on → absolute), 避免两页同时占位把页面撑高(下沉重播)
+    cur.classList.remove('on','pre-r','pre-l');
+    cur.classList.add(forward ? 'out-l' : 'out-r');
     // 新页: 从侧边滑入(与旧页淡出重叠交叉)
     nxt.classList.remove('on','pre-r','pre-l','out-l','out-r');
     nxt.classList.add(forward ? 'pre-r' : 'pre-l');
     void nxt.offsetWidth;                       // 强制回流, 让起点生效
     nxt.classList.remove('pre-r','pre-l');
     nxt.classList.add('on');
-    // 旧页: 向反方向滑出淡出
-    cur.classList.remove('on','pre-r','pre-l');
-    cur.classList.add(forward ? 'out-l' : 'out-r');
     curIdx = i;
     fit();
     tabsEl.querySelectorAll('.tab').forEach((b,j)=>b.classList.toggle('on', j===i));
@@ -476,13 +476,14 @@ async function refreshMovies(){
     const forward = (v === 'movie');
     const g = document.getElementById('viewGame'), m = document.getElementById('viewMovie');
     const cur = forward ? g : m, nxt = forward ? m : g;
+    // 旧视图先脱离文档流, 避免两个视图同时占位把页面撑高(下沉重播)
+    cur.classList.remove('on','pre-r','pre-l');
+    cur.classList.add(forward ? 'out-l' : 'out-r');
     nxt.classList.remove('on','pre-r','pre-l','out-l','out-r');
     nxt.classList.add(forward ? 'pre-r' : 'pre-l');
     void nxt.offsetWidth;                      // 强制回流, 让起点生效
     nxt.classList.remove('pre-r','pre-l');
     nxt.classList.add('on');
-    cur.classList.remove('on','pre-r','pre-l');
-    cur.classList.add(forward ? 'out-l' : 'out-r');
     curView = v;
     btns.forEach(b=>b.classList.toggle('on', b===btn));
     moveGlider(top, btn);
