@@ -400,11 +400,11 @@ function paint(){
   const panels = [];
   if(state.game) panels.push({
     body: $('#body'), groups: state.game.groups || [], makeCard: card, unit: '款',
-    footFn: g => '共 ' + g.games.length + ' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价'
+    footFn: g => '共 ' + g.games.length + ' 款 · 评分来自 Metacritic'
   });
   if(state.movie) panels.push({
     body: $('#movieBody'), groups: state.movie.groups || [], makeCard: mcard, unit: '部',
-    footFn: g => '共 ' + g.movies.length + ' 部 · 评分与信息来自豆瓣'
+    footFn: g => '共 ' + g.movies.length + ' 部 · 评分来自豆瓣'
   });
   if(!panels.length) return;
   tabbed($('#tabs'), panels);
