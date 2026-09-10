@@ -81,14 +81,15 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .page.on{position:relative; opacity:1; pointer-events:auto; transform:translateX(0);}  /* 活动页留在文档流, 避免加载瞬间容器塌陷(底部元素上跳) */
   .page.pre-r{opacity:0; transform:translateX(44px);}
   .page.pre-l{opacity:0; transform:translateX(-44px);}
-  /* 进场用 keyframes(不受 position 切换影响, transition 的起始值会被吞掉) */
+  /* 进出场都用 keyframes: 显式定义起点, 不依赖元素残留状态(transition 会被起点问题吞掉) */
   @keyframes inR{from{opacity:0; transform:translateX(44px);} to{opacity:1; transform:translateX(0);}}
   @keyframes inL{from{opacity:0; transform:translateX(-44px);} to{opacity:1; transform:translateX(0);}}
+  @keyframes outL{from{opacity:1; transform:translateX(0);} to{opacity:0; transform:translateX(-44px);}}
+  @keyframes outR{from{opacity:1; transform:translateX(0);} to{opacity:0; transform:translateX(44px);}}
   .page.anim-in-r{animation:inR .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
   .page.anim-in-l{animation:inL .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
-  /* 出场规则必须在动画类之后: 否则 animation(fill:both) 会压住淡出, 旧页残留可见 → 两列表重叠 */
-  .page.out-l{opacity:0; transform:translateX(-44px); animation:none; transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
-  .page.out-r{opacity:0; transform:translateX(44px); animation:none; transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
+  .page.anim-out-l{animation:outL .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
+  .page.anim-out-r{animation:outR .6s cubic-bezier(.4,0,.2,1) both; transition:none;}
   /* 内容区初始就占满视口: 加载期间底部署名不在首屏内, 避免刷新时的跳动/闪烁 */
   #viewStack{min-height:calc(100vh - 100px);}
   .h2c{font-size:12.5px; color:var(--dim); font-weight:500; text-align:center; margin:0 0 12px; padding-top:16px;}
@@ -283,14 +284,8 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
     if(i===curIdx || !sections[i]) return;
     const forward = i > curIdx;
     const cur = sections[curIdx], nxt = sections[i];
-    // 旧页先脱离文档流(去 on → absolute), 避免两页同时占位把页面撑高(下沉重播); 同时清掉进场动画类
-    cur.classList.remove('on','pre-r','pre-l','anim-in-r','anim-in-l');
-    cur.classList.add(forward ? 'out-l' : 'out-r');
-    // 新页: 从侧边滑入(与旧页淡出重叠交叉); keyframes 动画, 起始位移不会被吞
-    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l');
-    void nxt.offsetWidth;                       // 强制回流, 保证动画重新开始
-    nxt.classList.add(forward ? 'anim-in-r' : 'anim-in-l');
-    nxt.classList.add('on');
+    // 旧页先脱离文档流(去 on → absolute)再让新页进场; 两页都走 keyframes 动画, 每次强制重播
+    animSwap(cur, nxt, forward);
     curIdx = i;
     fit();
     if(typeof stackFit === 'function') stackFit();   // 列表高度变化后同步外层容器(否则首次切换内容会溢出/错位)
@@ -344,6 +339,19 @@ function stackFit(){
   const on = Array.from(stack.children).find(el=>el.classList.contains('on'));
   if(!on) return;
   stack.style.height = on.offsetHeight + 'px';   // 瞬时, 不做高度动画
+}
+
+const PAGE_CLASSES = ['on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l','anim-out-l','anim-out-r'];
+
+/* 交叉重叠过渡: 旧页出场 + 新页进场(都用 keyframes, 每次强制重播) */
+function animSwap(cur, nxt, forward){
+  cur.classList.remove(...PAGE_CLASSES);
+  void cur.offsetWidth;                                  // 强制回流, 保证动画重播
+  cur.classList.add(forward ? 'anim-out-l' : 'anim-out-r');
+  nxt.classList.remove(...PAGE_CLASSES);
+  void nxt.offsetWidth;
+  nxt.classList.add(forward ? 'anim-in-r' : 'anim-in-l');
+  nxt.classList.add('on');
 }
 
 function render(d){
@@ -504,13 +512,8 @@ async function refreshMovies(){
     const forward = (v === 'movie');
     const g = document.getElementById('viewGame'), m = document.getElementById('viewMovie');
     const cur = forward ? g : m, nxt = forward ? m : g;
-    // 旧视图先脱离文档流(去 on → absolute), 避免两视图同时占位把页面撑高(下沉重播); 同时清掉进场动画类
-    cur.classList.remove('on','pre-r','pre-l','anim-in-r','anim-in-l');
-    cur.classList.add(forward ? 'out-l' : 'out-r');
-    nxt.classList.remove('on','pre-r','pre-l','out-l','out-r','anim-in-r','anim-in-l');
-    void nxt.offsetWidth;                      // 强制回流, 保证动画重新开始
-    nxt.classList.add(forward ? 'anim-in-r' : 'anim-in-l');
-    nxt.classList.add('on');
+    // 旧视图先脱离文档流, 两视图都走 keyframes 动画(每次强制重播)
+    animSwap(cur, nxt, forward);
     curView = v;
     btns.forEach(b=>b.classList.toggle('on', b===btn));
     moveGlider(top, btn);
