@@ -465,10 +465,10 @@ function mcard(it){
   const whenTag = whenCls ? '<span class="when '+whenCls+'">'+whenTxt+'</span>' : '';
   const img = it.poster
     ? '<img class="cover" src="'+esc(it.poster)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
-  /* 豆瓣 10 分制: ≥8 绿 / ≥6 黄 / <6 红, 整块跳豆瓣条目页 */
+  /* 豆瓣 10 分制 ×10 显示(与游戏 Metacritic 同为百分制): ≥80 绿 / ≥60 黄 / <60 红, 整块跳豆瓣条目页 */
   const mc = sc!=null ? '<a class="mcbox '+(sc>=8?'g':(sc>=6?'y':'r'))+'" href="'+esc(it.url||'https://movie.douban.com/')+
-      '" target="_blank" rel="noopener" title="豆瓣评分 '+sc+'">'+
-      '<span class="mcv">'+sc.toFixed(1)+'</span></a>' : '';
+      '" target="_blank" rel="noopener" title="豆瓣评分 '+sc+'（×10 显示为百分制）">'+
+      '<span class="mcv">'+Math.round(sc*10)+'</span></a>' : '';
   const mi = minfoParts(it.info);
   const line2 = '<span>'+it.month+'月'+it.day+'日'+(mi.region?' · '+esc(mi.region):'')+'</span>';
   const line3 = mi.kind;   // 第三行只留类型(导演去掉)
