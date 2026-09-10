@@ -137,11 +137,11 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .txt .tag b{color:var(--today); font-weight:700;}
   .txt .tag .mc{display:none;}
   .txt .tag.tag3{margin-top:2px; padding-right:56px;}   /* 给右下角评分块让位 */
-  .mcbox{position:absolute; right:18px; bottom:14px; border-radius:13px; padding:8px 4px 11px;
-       min-width:50px; color:#fff; display:flex; align-items:center; justify-content:center;
+  .mcbox{position:absolute; right:18px; bottom:14px; border-radius:11px; padding:0;
+       width:42px; height:42px; box-sizing:border-box; color:#fff; display:flex; align-items:center; justify-content:center;
        line-height:1; z-index:2; box-shadow:0 2px 8px rgba(0,0,0,.18); text-decoration:none;}
   .mcbox:hover{filter:brightness(1.08);}
-  .mcbox .mcv{font-size:24px; font-weight:800; letter-spacing:-.01em; line-height:1; text-decoration:none;}
+  .mcbox .mcv{font-size:17px; font-weight:800; letter-spacing:-.02em; line-height:1; text-decoration:none;}
   .mcbox.g,.mcbox.y,.mcbox.r{text-align:center;}
   .mcbox.g{background:#1f9d55;} .mcbox.y{background:#e2a03a;} .mcbox.r{background:#d6453f;}
   html.dark .mcbox{box-shadow:0 2px 10px rgba(0,0,0,.45);}
