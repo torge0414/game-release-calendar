@@ -346,7 +346,8 @@ function tabbed(tabsEl, panels){
     fitAll();
     stackFit();
     tabsEl.querySelectorAll('.tab').forEach((b,j)=>b.classList.toggle('on', j===i));
-    moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[i], !animate);
+    /* 滑块: 正常切换有动画; 静默归位默认瞬移, 但 opts.glide 时仍平滑滑动(视图切换时月份从下月回到本月) */
+    moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[i], !animate && !opts.glide);
   };
 
   /* 供顶层视图切换时把月份重置回「本月」: skipBody 跳过正在淡出的视图; force 用于动画后再补一次 */
@@ -607,7 +608,7 @@ async function refreshMovies(){
       animSwap(cur, nxt, forward);          // 旧视图先脱离文档流, 两视图都走 keyframes 动画
       /* 月份重置: 新视图立即归位(它刚从透明淡入, 看不到); 旧视图正在淡出, 等动画结束再归位(否则会闪出"本月"列表) */
       const oldBody = forward ? document.getElementById('body') : document.getElementById('movieBody');
-      if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ skipBody: oldBody });
+      if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ skipBody: oldBody, glide: true });
       setTimeout(()=>{ if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ onlyBody: oldBody }); }, 700);
     } else {
       PAGE_CLASSES.forEach(c=>{ cur.classList.remove(c); nxt.classList.remove(c); });
