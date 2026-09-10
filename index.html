@@ -358,6 +358,18 @@ function animSwap(cur, nxt, forward){
   nxt.classList.add('on');
 }
 
+/* 评分块底边与封面底边对齐(封面垂直居中, 距离随卡片高度浮动, 需实测) */
+function alignMc(){
+  document.querySelectorAll('.item').forEach(it=>{
+    const pic = it.querySelector('.pic'), box = it.querySelector('.mcbox');
+    if(!pic || !box) return;
+    const ir = it.getBoundingClientRect(), pr = pic.getBoundingClientRect();
+    if(!ir.height || !pr.height) return;
+    const gap = Math.round(ir.bottom - pr.bottom);
+    if(gap >= 0 && gap < 200) box.style.bottom = gap + 'px';
+  });
+}
+
 function render(d){
   $('#metaTxt').textContent = '数据更新于 ' + (d.updated||'') ;
   const groups = d.groups||[];
@@ -366,6 +378,7 @@ function render(d){
   $('#foot').textContent = '共 '+total+' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价';
   showCredit();
   stackFit();
+  alignMc();
   hideBoot();
 }
 
@@ -494,6 +507,7 @@ function renderMovies(d){
   $('#mfoot').textContent = '共 '+total+' 部 · 评分与信息来自豆瓣';
   showCredit();
   stackFit();
+  alignMc();
   hideBoot();
 }
 
@@ -539,6 +553,7 @@ async function refreshMovies(){
   }));
   moveGlider(top, top.querySelector('.tab'));
   window.addEventListener('resize', stackFit);
+  window.addEventListener('resize', alignMc);
   stackFit();
 })();
 
