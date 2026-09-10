@@ -188,9 +188,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .tabs.top{margin:30px auto 2px;}   /* 标题与下方内容拉开距离 */
   .pic.m{flex:0 0 68px; width:68px; height:100px;}
   .pic.m .ph{font-size:20px;}
-  .item.mv{align-items:flex-start;}   /* 电影: 片名与封面顶对齐 */
-  .item.mv .txt{align-self:stretch; display:flex; flex-direction:column;}
-  .item.mv .tag.first{margin-top:auto;}   /* 日期/类型组推到底部, 与封面底·评分块底对齐 */
+  .item.mv{align-items:flex-start;}   /* 电影: 信息与封面顶对齐 */
   footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
   .pfoot{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
   .credit{color:var(--dim); font-size:11px; text-align:center; padding-bottom:16px; opacity:.8;}
@@ -539,7 +537,7 @@ function mcard(it){
     '</div>'+
     '<div class="txt">'+
       '<div class="tline'+(whenTag?' haswhen':'')+'"><div class="t"></div>'+whenTag+'</div>'+
-      '<div class="tag first">'+line2+'</div>'+
+      '<div class="tag">'+line2+'</div>'+
       (line3?'<div class="tag tag3"><span>'+esc(line3)+'</span></div>':'')+
     '</div>'+mc;
   wrap.querySelector('.t').textContent = it.title;
