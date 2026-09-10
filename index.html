@@ -274,7 +274,10 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
   let curIdx = 0;
 
   const fit = ()=>{
-    if(sections[curIdx]) pagesEl.style.height = sections[curIdx].offsetHeight + 'px';
+    /* 取所有页的最大高度: 切换时容器高度不变, 页面高度恒定(否则下方内容会随切换跳动=下沉感) */
+    let mx = 0;
+    sections.forEach(s=>{ if(s.offsetHeight > mx) mx = s.offsetHeight; });
+    if(mx) pagesEl.style.height = mx + 'px';
   };
   const switchTo = (i)=>{
     if(i===curIdx || !sections[i]) return;
@@ -290,6 +293,7 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit){
     nxt.classList.add('on');
     curIdx = i;
     fit();
+    if(typeof stackFit === 'function') stackFit();   // 列表高度变化后同步外层容器(否则首次切换内容会溢出/错位)
     tabsEl.querySelectorAll('.tab').forEach((b,j)=>b.classList.toggle('on', j===i));
     moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[i]);
   };
