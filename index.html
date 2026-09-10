@@ -78,7 +78,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .page{position:absolute; top:0; left:0; width:100%; opacity:0; pointer-events:none;
         transform:translateX(0);
         transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1);}
-  .page.on{opacity:1; pointer-events:auto; transform:translateX(0);}
+  .page.on{position:relative; opacity:1; pointer-events:auto; transform:translateX(0);}  /* 活动页留在文档流, 避免加载瞬间容器塌陷(底部元素上跳) */
   .page.pre-r{opacity:0; transform:translateX(44px);}
   .page.pre-l{opacity:0; transform:translateX(-44px);}
   .page.out-l{opacity:0; transform:translateX(-44px);}
