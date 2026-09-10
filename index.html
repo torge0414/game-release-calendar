@@ -311,20 +311,28 @@ function tabbed(tabsEl, panels){
   });
 
   const fitAll = ()=> panels.forEach(p=>p.fit());
-  const switchTo = (i, animate)=>{
-    if(i === curIdx) return;
+  /* 按 panel 实际显示的页来切(各 panel 可能因重置时机不同而暂时不同步) */
+  const applyIdx = (p, i, animate)=>{
+    const onIdx = p.sections.findIndex(s=>s.classList.contains('on'));
+    const pCur = onIdx >= 0 ? onIdx : 0;
+    if(pCur === i) return;
+    const cur = p.sections[pCur], nxt = p.sections[i];
+    if(!cur || !nxt) return;
+    if(animate){
+      animSwap(cur, nxt, i > pCur);
+    } else {
+      PAGE_CLASSES.forEach(c=>{ cur.classList.remove(c); nxt.classList.remove(c); });
+      cur.classList.add('off');
+      nxt.classList.add('on');
+    }
+  };
+  const switchTo = (i, animate, opts)=>{
+    opts = opts || {};
+    if(i === curIdx && !opts.force) return;
     if(animate === undefined) animate = true;
-    const forward = i > curIdx;
     panels.forEach(p=>{
-      const cur = p.sections[curIdx], nxt = p.sections[i];
-      if(!cur || !nxt) return;
-      if(animate){
-        animSwap(cur, nxt, forward);        // 两个 panel 都切, 保持状态一致(隐藏视图看不到动画)
-      } else {                              // 无动画切换(视图切换时重置月份用)
-        PAGE_CLASSES.forEach(c=>{ cur.classList.remove(c); nxt.classList.remove(c); });
-        cur.classList.add('off');
-        nxt.classList.add('on');
-      }
+      if(opts.skipBody && p.body === opts.skipBody) return;   // 正在淡出的视图先不动(否则会闪现)
+      applyIdx(p, i, animate);
     });
     curIdx = i;
     try { localStorage.setItem(tabKey, String(i)); } catch(e) {}
@@ -334,8 +342,8 @@ function tabbed(tabsEl, panels){
     moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[i], !animate);
   };
 
-  /* 供顶层视图切换时把月份重置回「本月」 */
-  window['_resetMonth_' + (tabsEl.id || 'x')] = ()=> switchTo(0, false);
+  /* 供顶层视图切换时把月份重置回「本月」: skipBody 跳过正在淡出的视图; force 用于动画后再补一次 */
+  window['_resetMonth_' + (tabsEl.id || 'x')] = (opts)=> switchTo(0, false, opts);
 
   panels[0].groups.forEach((g,i)=>{
     const btn = document.createElement('button');
@@ -590,14 +598,16 @@ async function refreshMovies(){
     const cur = forward ? g : m, nxt = forward ? m : g;
     if(animate){
       animSwap(cur, nxt, forward);          // 旧视图先脱离文档流, 两视图都走 keyframes 动画
+      /* 月份重置: 新视图立即归位(它刚从透明淡入, 看不到); 旧视图正在淡出, 等动画结束再归位(否则会闪出"本月"列表) */
+      const oldBody = forward ? document.getElementById('body') : document.getElementById('movieBody');
+      if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ skipBody: oldBody });
+      setTimeout(()=>{ if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ force: true }); }, 700);
     } else {
       PAGE_CLASSES.forEach(c=>{ cur.classList.remove(c); nxt.classList.remove(c); });
       nxt.classList.add('on');
       cur.classList.add('off');          // 静态隐藏(无动画), 刷新恢复时不会补播淡出
     }
     curView = v;
-    /* 手动切换游戏/电影时月份回到「本月」; 刷新恢复视图时不重置(保留上次选的月份) */
-    if(animate && window['_resetMonth_tabs']) window['_resetMonth_tabs']();
     btns.forEach(b=>b.classList.toggle('on', b.dataset.view === v));
     const curBtn = btns.find(b=>b.dataset.view === v);
     if(curBtn) moveGlider(top, curBtn);
