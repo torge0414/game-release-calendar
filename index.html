@@ -274,7 +274,11 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
   tabsEl.innerHTML = '<span class="tabg"></span>';  // 滑块层
   const sections = [];
   const pagesEl = document.createElement('div'); pagesEl.className='pages';
-  let curIdx = 0;
+  const key = '_fit_' + (tabsEl.id || 'x');
+  const tabKey = 'glwTab_' + (tabsEl.id || 'x');
+  let savedIdx = 0;
+  try { savedIdx = Number(localStorage.getItem(tabKey) || 0) || 0; } catch(e) {}
+  let curIdx = (savedIdx === 1 && groups.length > 1) ? 1 : 0;
 
   const fit = ()=>{
     /* 高度=当前页(页尾信息与 @torge 都在页内, 容器外没有内容, 所以高度变化不会造成可见位移) */
@@ -287,6 +291,7 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
     // 旧页先脱离文档流(去 on → absolute)再让新页进场; 两页都走 keyframes 动画, 每次强制重播
     animSwap(cur, nxt, forward);
     curIdx = i;
+    try { localStorage.setItem(tabKey, String(i)); } catch(e) {}
     fit();
     if(typeof stackFit === 'function') stackFit();   // 列表高度变化后同步外层容器(否则首次切换内容会溢出/错位)
     tabsEl.querySelectorAll('.tab').forEach((b,j)=>b.classList.toggle('on', j===i));
@@ -296,7 +301,7 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
   groups.forEach((g,i)=>{
     const items = g.games || g.movies || [];
     const sect = document.createElement('div');
-    sect.className = 'sect page' + (i===0 ? ' on' : '');
+    sect.className = 'sect page' + (i===curIdx ? ' on' : '');
     const h2 = document.createElement('div'); h2.className='h2c';
     h2.textContent = items.length + ' ' + unit;
     sect.appendChild(h2);
@@ -312,18 +317,18 @@ function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
     sect.appendChild(cr);
     sections.push(sect);
     const btn = document.createElement('button');
-    btn.className = 'tab' + (i===0 ? ' on' : '');
+    btn.className = 'tab' + (i===curIdx ? ' on' : '');
     btn.textContent = (i===0 ? '本月' : '下月') + ' · ' + g.month + '月';
     btn.addEventListener('click', ()=>switchTo(i));
     tabsEl.appendChild(btn);
   });
   bodyEl.appendChild(pagesEl);
+  if(curIdx !== 0 && sections[0]) sections[0].classList.add('anim-out-r');   // 恢复的隐藏页置淡出态
   fit();  // 首屏高度
-  const key = '_fit_' + (tabsEl.id || 'x');
   if(window[key]) window.removeEventListener('resize', window[key]);
   window[key] = fit;
   window.addEventListener('resize', fit);
-  moveGlider(tabsEl, tabsEl.querySelector('.tab'));
+  moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[curIdx]);
   return fit;
 }
 
@@ -533,31 +538,44 @@ async function refreshMovies(){
   }
 }
 
-/* 顶层切换: 游戏 / 电影 (交叉重叠过渡, 与本月/下月页签同款) */
+/* 顶层切换: 游戏 / 电影 (交叉重叠过渡, 与本月/下月页签同款; 记住上次视图) */
 (function(){
   const top = document.getElementById('topTabs');
   if(!top) return;
   const btns = Array.from(top.querySelectorAll('.tab'));
+  const g = document.getElementById('viewGame'), m = document.getElementById('viewMovie');
   let curView = 'game';
-  btns.forEach(btn=>btn.addEventListener('click', ()=>{
-    const v = btn.dataset.view;
-    if(v === curView) return;
+
+  function setView(v, animate){
+    if(v === curView || (v !== 'game' && v !== 'movie')) return;
     const forward = (v === 'movie');
-    const g = document.getElementById('viewGame'), m = document.getElementById('viewMovie');
     const cur = forward ? g : m, nxt = forward ? m : g;
-    // 旧视图先脱离文档流, 两视图都走 keyframes 动画(每次强制重播)
-    animSwap(cur, nxt, forward);
+    if(animate){
+      animSwap(cur, nxt, forward);          // 旧视图先脱离文档流, 两视图都走 keyframes 动画
+    } else {
+      PAGE_CLASSES.forEach(c=>{ cur.classList.remove(c); nxt.classList.remove(c); });
+      nxt.classList.add('on');
+      cur.classList.add(forward ? 'anim-out-l' : 'anim-out-r');   // 静态隐藏(动画终态)
+    }
     curView = v;
-    btns.forEach(b=>b.classList.toggle('on', b===btn));
-    moveGlider(top, btn);
+    btns.forEach(b=>b.classList.toggle('on', b.dataset.view === v));
+    const curBtn = btns.find(b=>b.dataset.view === v);
+    if(curBtn) moveGlider(top, curBtn);
     if(v === 'movie') refreshMovies();
-    /* 直接用新视图高度(此时它还没拿到 on, stackFit 认不出), 高度瞬时调整 */
+    /* 直接用新视图高度(切换瞬间它可能还没拿到 on), 高度瞬时调整 */
     const stack = document.getElementById('viewStack');
     if(stack) stack.style.height = nxt.offsetHeight + 'px';
     const fit = (v === 'game') ? window['_fit_tabs'] : window['_fit_mtabs'];
     if(fit) fit();
-  }));
-  moveGlider(top, top.querySelector('.tab'));
+    try { localStorage.setItem('glwView', v); } catch(e) {}
+  }
+
+  btns.forEach(btn=>btn.addEventListener('click', ()=>setView(btn.dataset.view, true)));
+
+  let saved = 'game';
+  try { saved = localStorage.getItem('glwView') || 'game'; } catch(e) {}
+  if(saved === 'movie') setView('movie', false);      // 恢复上次视图(无动画)
+  moveGlider(top, top.querySelector('.tab.on') || btns[0]);
   window.addEventListener('resize', stackFit);
   window.addEventListener('resize', alignMc);
   stackFit();
