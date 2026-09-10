@@ -375,15 +375,21 @@ function animSwap(cur, nxt, forward){
   nxt.classList.add('on');
 }
 
-/* 评分块底边与封面底边对齐(封面垂直居中, 距离随卡片高度浮动, 需实测) */
+/* 评分块纵向对齐: 默认与封面底对齐; 平台标签换行(手机端)时与最后一行标签对齐 */
 function alignMc(){
   document.querySelectorAll('.item').forEach(it=>{
-    const pic = it.querySelector('.pic'), box = it.querySelector('.mcbox');
-    if(!pic || !box) return;
-    const ir = it.getBoundingClientRect(), pr = pic.getBoundingClientRect();
-    if(!ir.height || !pr.height) return;
-    const gap = Math.round(ir.bottom - pr.bottom);
-    if(gap >= 0 && gap < 200) box.style.bottom = gap + 'px';
+    const box = it.querySelector('.mcbox');
+    if(!box) return;
+    const ir = it.getBoundingClientRect();
+    const cands = [];
+    const pic = it.querySelector('.pic');
+    const plats = it.querySelector('.plats');
+    if(pic) cands.push(pic.getBoundingClientRect().bottom);
+    if(plats && plats.children.length) cands.push(plats.getBoundingClientRect().bottom);
+    if(!cands.length) return;
+    const ref = Math.max.apply(null, cands);    // 取更靠下的参照 = 平台标签换行时对齐最后一行
+    const gap = Math.round(ir.bottom - ref);
+    if(gap >= 0 && gap < 300) box.style.bottom = gap + 'px';
   });
 }
 
@@ -601,6 +607,7 @@ async function refreshMovies(){
   stackFit();
 })();
 
+window.addEventListener('load', ()=>{ alignMc(); stackFit(); });   // 字体/图片就位后重算布局对齐
 refresh();
 refreshMovies();   // 预渲染电影视图: 首次切换时高度已就位, 避免"先塌后撑"的下沉
 </script>
