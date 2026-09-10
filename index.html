@@ -214,17 +214,17 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
       <button class="tab" data-view="movie">电影</button>
     </div>
   </header>
+  <!-- 月份页签移到视图外: 切游戏/电影时它不参与淡入淡出, 刷新也不会滑动 -->
+  <div class="tabs" id="tabs"><span class="tabg"></span></div>
   <div class="pages" id="viewStack">
   <div class="page on" id="viewGame">
     <div class="meta"><span id="metaTxt"></span><span class="msep">·</span><span>每月初自动更新</span></div>
     <div class="err" id="errBox"></div>
-    <div class="tabs" id="tabs"></div>
     <div id="body"><div class="loading"><span class="spin"></span></div></div>
   </div>
   <div class="page" id="viewMovie">
     <div class="meta"><span id="mmeta"></span><span class="msep">·</span><span>每月初自动更新</span></div>
     <div class="err" id="mErrBox"></div>
-    <div class="tabs" id="mtabs"></div>
     <div id="movieBody"><div class="loading"><span class="spin"></span></div></div>
   </div>
   </div>
@@ -263,75 +263,83 @@ async function refresh(){
   }
 }
 
-function moveGlider(tabsEl, btn){
+function moveGlider(tabsEl, btn, instant){
   const g = tabsEl.querySelector('.tabg');
   if(!g || !btn) return;
+  if(instant) g.style.transition = 'none';     // 首次/恢复定位: 不要滑动过程
   g.style.width = btn.offsetWidth + 'px';
   g.style.transform = 'translateX(' + (btn.offsetLeft - 3) + 'px)';
+  if(instant){ void g.offsetWidth; g.style.transition = ''; }
 }
 
-/* 通用: 本月/下月页签 + 交叉重叠过渡(游戏/电影共用); makeCard 造卡片, unit 计数单位, footFn 生成页尾信息 */
-function tabbed(tabsEl, bodyEl, groups, makeCard, unit, footFn){
-  bodyEl.innerHTML='';
+/* 通用: 月份页签 + 交叉重叠过渡; panels = [{body, groups, makeCard, unit, footFn}]
+   一份页签可同时控制多个 panel(游戏/电影各自的列表), 切月时两边同步 */
+function tabbed(tabsEl, panels){
   tabsEl.innerHTML = '<span class="tabg"></span>';  // 滑块层
-  const sections = [];
-  const pagesEl = document.createElement('div'); pagesEl.className='pages';
-  const key = '_fit_' + (tabsEl.id || 'x');
   const tabKey = 'glwTab_' + (tabsEl.id || 'x');
   let savedIdx = 0;
   try { savedIdx = Number(localStorage.getItem(tabKey) || 0) || 0; } catch(e) {}
-  let curIdx = (savedIdx === 1 && groups.length > 1) ? 1 : 0;
+  const nMonths = Math.max.apply(null, panels.map(p=>p.groups.length).concat([1]));
+  let curIdx = (savedIdx === 1 && nMonths > 1) ? 1 : 0;
 
-  const fit = ()=>{
-    /* 高度=当前页(页尾信息与 @torge 都在页内, 容器外没有内容, 所以高度变化不会造成可见位移) */
-    if(sections[curIdx]) pagesEl.style.height = sections[curIdx].offsetHeight + 'px';
-  };
+  panels.forEach(p=>{
+    p.body.innerHTML = '';
+    const pagesEl = document.createElement('div'); pagesEl.className='pages';
+    p.pagesEl = pagesEl; p.sections = [];
+    p.groups.forEach((g,i)=>{
+      const items = g.games || g.movies || [];
+      const sect = document.createElement('div');
+      sect.className = 'sect page' + (i===curIdx ? ' on' : '');
+      const h2 = document.createElement('div'); h2.className='h2c';
+      h2.textContent = items.length + ' ' + p.unit;
+      sect.appendChild(h2);
+      const list = document.createElement('div'); list.className='list';
+      if(!items.length) list.innerHTML='<div class="empty">该月暂无已定档</div>';
+      else items.forEach(it=>list.appendChild(p.makeCard(it)));
+      sect.appendChild(list);
+      const ft = document.createElement('div'); ft.className = 'pfoot';
+      ft.textContent = p.footFn ? p.footFn(g, items) : '';
+      sect.appendChild(ft);
+      const cr = document.createElement('div'); cr.className = 'credit'; cr.textContent = '@torge';
+      sect.appendChild(cr);
+      pagesEl.appendChild(sect); p.sections.push(sect);
+    });
+    p.body.appendChild(pagesEl);
+    if(curIdx !== 0 && p.sections[0]) p.sections[0].classList.add('off');   // 恢复的隐藏页静态隐藏(无动画)
+    p.fit = ()=>{ if(p.sections[curIdx]) p.pagesEl.style.height = p.sections[curIdx].offsetHeight + 'px'; };
+    p.fit();
+  });
+
+  const fitAll = ()=> panels.forEach(p=>p.fit());
   const switchTo = (i)=>{
-    if(i===curIdx || !sections[i]) return;
+    if(i === curIdx) return;
     const forward = i > curIdx;
-    const cur = sections[curIdx], nxt = sections[i];
-    // 旧页先脱离文档流(去 on → absolute)再让新页进场; 两页都走 keyframes 动画, 每次强制重播
-    animSwap(cur, nxt, forward);
+    panels.forEach(p=>{
+      const cur = p.sections[curIdx], nxt = p.sections[i];
+      if(cur && nxt) animSwap(cur, nxt, forward);   // 两个 panel 都切, 保持状态一致(隐藏视图看不到动画)
+    });
     curIdx = i;
     try { localStorage.setItem(tabKey, String(i)); } catch(e) {}
-    fit();
-    if(typeof stackFit === 'function') stackFit();   // 列表高度变化后同步外层容器(否则首次切换内容会溢出/错位)
+    fitAll();
+    stackFit();
     tabsEl.querySelectorAll('.tab').forEach((b,j)=>b.classList.toggle('on', j===i));
     moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[i]);
   };
 
-  groups.forEach((g,i)=>{
-    const items = g.games || g.movies || [];
-    const sect = document.createElement('div');
-    sect.className = 'sect page' + (i===curIdx ? ' on' : '');
-    const h2 = document.createElement('div'); h2.className='h2c';
-    h2.textContent = items.length + ' ' + unit;
-    sect.appendChild(h2);
-    const list = document.createElement('div'); list.className='list';
-    if(!items.length) list.innerHTML='<div class="empty">该月暂无已定档</div>';
-    else items.forEach(it=>list.appendChild(makeCard(it)));
-    sect.appendChild(list); pagesEl.appendChild(sect);
-    /* 页尾信息跟各自列表走(容器取两页最大高度, 若放外面会离短列表很远) */
-    const ft = document.createElement('div'); ft.className = 'pfoot';
-    ft.textContent = footFn ? footFn(g, items) : '';
-    sect.appendChild(ft);
-    const cr = document.createElement('div'); cr.className = 'credit'; cr.textContent = '@torge';
-    sect.appendChild(cr);
-    sections.push(sect);
+  panels[0].groups.forEach((g,i)=>{
     const btn = document.createElement('button');
     btn.className = 'tab' + (i===curIdx ? ' on' : '');
     btn.textContent = (i===0 ? '本月' : '下月') + ' · ' + g.month + '月';
     btn.addEventListener('click', ()=>switchTo(i));
     tabsEl.appendChild(btn);
   });
-  bodyEl.appendChild(pagesEl);
-  if(curIdx !== 0 && sections[0]) sections[0].classList.add('off');   // 恢复的隐藏页静态隐藏(无动画)
-  fit();  // 首屏高度
-  if(window[key]) window.removeEventListener('resize', window[key]);
-  window[key] = fit;
-  window.addEventListener('resize', fit);
-  moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[curIdx]);
-  return fit;
+
+  const fitKey = '_fit_' + (tabsEl.id || 'x');
+  if(window[fitKey]) window.removeEventListener('resize', window[fitKey]);
+  window[fitKey] = fitAll;
+  window.addEventListener('resize', fitAll);
+  moveGlider(tabsEl, tabsEl.querySelectorAll('.tab')[curIdx], true);   // 恢复定位不滑动
+  return fitAll;
 }
 
 function showCredit(){
@@ -379,15 +387,32 @@ function alignMc(){
   });
 }
 
-function render(d){
-  $('#metaTxt').textContent = '数据更新于 ' + (d.updated||'') ;
-  const groups = d.groups||[];
-  tabbed($('#tabs'), $('#body'), groups, card, '款',
-    g => '共 ' + g.games.length + ' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价');
+let state = { game: null, movie: null };
+
+/* 两份数据任一到位就重建(月签只有一份, 同时控制两边列表) */
+function paint(){
+  const panels = [];
+  if(state.game) panels.push({
+    body: $('#body'), groups: state.game.groups || [], makeCard: card, unit: '款',
+    footFn: g => '共 ' + g.games.length + ' 款 · 人民币为 Steam 国区价 · 港币为 PS / NS 港服价'
+  });
+  if(state.movie) panels.push({
+    body: $('#movieBody'), groups: state.movie.groups || [], makeCard: mcard, unit: '部',
+    footFn: g => '共 ' + g.movies.length + ' 部 · 评分与信息来自豆瓣'
+  });
+  if(!panels.length) return;
+  tabbed($('#tabs'), panels);
+  $('#metaTxt').textContent = '数据更新于 ' + ((state.game && state.game.updated) || '');
+  $('#mmeta').textContent = '数据更新于 ' + ((state.movie && state.movie.updated) || '');
   showCredit();
   stackFit();
   alignMc();
   hideBoot();
+}
+
+function render(d){
+  state.game = d;
+  paint();
 }
 
 function card(it){
@@ -514,14 +539,8 @@ function mcard(it){
 }
 
 function renderMovies(d){
-  $('#mmeta').textContent = '数据更新于 ' + (d.updated||'');
-  const groups = d.groups||[];
-  tabbed($('#mtabs'), $('#movieBody'), groups, mcard, '部',
-    g => '共 ' + g.movies.length + ' 部 · 评分与信息来自豆瓣');
-  showCredit();
-  stackFit();
-  alignMc();
-  hideBoot();
+  state.movie = d;
+  paint();
 }
 
 let moviesLoaded = false;
@@ -567,8 +586,7 @@ async function refreshMovies(){
     /* 直接用新视图高度(切换瞬间它可能还没拿到 on), 高度瞬时调整 */
     const stack = document.getElementById('viewStack');
     if(stack) stack.style.height = nxt.offsetHeight + 'px';
-    const fit = (v === 'game') ? window['_fit_tabs'] : window['_fit_mtabs'];
-    if(fit) fit();
+    if(window['_fit_tabs']) window['_fit_tabs']();
     try { localStorage.setItem('glwView', v); } catch(e) {}
   }
 
@@ -577,7 +595,7 @@ async function refreshMovies(){
   let saved = 'game';
   try { saved = localStorage.getItem('glwView') || 'game'; } catch(e) {}
   if(saved === 'movie') setView('movie', false);      // 恢复上次视图(无动画)
-  moveGlider(top, top.querySelector('.tab.on') || btns[0]);
+  moveGlider(top, top.querySelector('.tab.on') || btns[0], true);   // 恢复定位不滑动
   window.addEventListener('resize', stackFit);
   window.addEventListener('resize', alignMc);
   stackFit();
