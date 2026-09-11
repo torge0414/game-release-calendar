@@ -301,7 +301,7 @@ function tabbed(tabsEl, panels){
       h2.textContent = items.length + ' ' + p.unit;
       sect.appendChild(h2);
       const list = document.createElement('div'); list.className='list';
-      if(!items.length) list.innerHTML='<div class="empty">该月暂无已定档</div>';
+      if(!items.length) list.innerHTML='<div class="empty">'+esc(p.emptyText || '该月暂无已定档')+'</div>';
       else items.forEach(it=>list.appendChild(p.makeCard(it)));
       sect.appendChild(list);
       const ft = document.createElement('div'); ft.className = 'pfoot';
@@ -442,7 +442,8 @@ function paint(){
   });
   if(state.music) panels.push({
     body: $('#musicBody'), groups: state.music.groups || [], makeCard: mucard, unit: '张',
-    footFn: g => '共 ' + g.albums.length + ' 张 · 评分来自 Metacritic'
+    emptyText: 'Pitchfork 只收录已发行专辑，下月暂无',
+    footFn: g => '共 ' + g.albums.length + ' 张 · 评分来自 Pitchfork'
   });
   if(!panels.length) return;
   tabbed($('#tabs'), panels);
@@ -607,7 +608,7 @@ async function refreshMovies(){
 /* ---------- 音乐(Apple Music + Metacritic) ---------- */
 function mucard(it){
   const wrap = document.createElement('div'); wrap.className='item mv';
-  const sc = (typeof it.mc==='number' && it.mc>0) ? it.mc : null;
+  const sc = (typeof it.score==='number' && it.score>0) ? it.score : null;
   if(it.day===today.getDate() && it.month===today.getMonth()+1) wrap.classList.add('today');
   const date = new Date(it.year, it.month-1, it.day);
   const diff = Math.round((date - new Date(today.getFullYear(),today.getMonth(),today.getDate()))/86400000);
@@ -619,12 +620,13 @@ function mucard(it){
   const whenTag = whenCls ? '<span class="when '+whenCls+'">'+whenTxt+'</span>' : '';
   const img = it.art ? '<img class="cover" src="'+esc(it.art)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
   /* Metacritic 专业均分(百分制): ≥80 绿 / ≥60 黄 / <60 红 */
-  const mcBox = sc!=null ? '<a class="mcbox '+(sc>=80?'g':(sc>=60?'y':'r'))+'" href="'+esc(it.mc_url||'https://www.metacritic.com/')+
-      '" target="_blank" rel="noopener" title="Metacritic 均分 '+sc+'">'+
+  const mcBox = sc!=null ? '<a class="mcbox '+(sc>=80?'g':(sc>=60?'y':'r'))+'" href="'+esc(it.score_url||'https://pitchfork.com/reviews/albums/')+
+      '" target="_blank" rel="noopener" title="Pitchfork 评分 '+(it.rating!=null?it.rating.toFixed(1):'')+' (百分制 '+sc+')'+
+      (it.mc!=null?', Metacritic '+it.mc:'')+'">'+
       '<span class="mcv">'+sc+'</span></a>' : '';
   const line2 = '<span>'+esc(it.artist||'')+'</span>';
   const line3 = [it.genre||'', it.date? ((+it.date.slice(5,7))+'月'+(+it.date.slice(8,10))+'日') : ''].filter(Boolean).join(' · ');
-  const link = it.apple_url ? ' href="'+esc(it.apple_url)+'" target="_blank" rel="noopener"' : '';
+  const link = (it.url||it.apple_url) ? ' href="'+esc(it.url||it.apple_url)+'" target="_blank" rel="noopener"' : '';
   wrap.innerHTML =
     '<div class="pic sq">'+img+
       '<div class="ph" style="background:'+phColor(it.title)+(it.art?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
@@ -636,7 +638,7 @@ function mucard(it){
     '</div>'+mcBox;
   const t = wrap.querySelector('.t');
   t.textContent = it.title;
-  if(it.apple_url) t.outerHTML = '<a class="t"'+link+'>'+esc(it.title)+'</a>';
+  if(it.url||it.apple_url) t.outerHTML = '<a class="t"'+link+'>'+esc(it.title)+'</a>';
   return wrap;
 }
 
