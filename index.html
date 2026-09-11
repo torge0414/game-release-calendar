@@ -443,7 +443,7 @@ function paint(){
   if(state.music) panels.push({
     body: $('#musicBody'), groups: state.music.groups || [], makeCard: mucard, unit: '张',
     emptyText: '该月暂无符合条件的专辑',
-    footFn: g => '共 ' + g.albums.length + ' 张 · 评分来自 Metacritic'
+    footFn: g => '共 ' + g.albums.length + ' 张 · 评分来自 AOTY'
   });
   if(!panels.length) return;
   tabbed($('#tabs'), panels);
@@ -621,9 +621,11 @@ function mucard(it){
   const img = it.art ? '<img class="cover" src="'+esc(it.art)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
   /* Metacritic 专业均分(百分制): ≥80 绿 / ≥60 黄 / <60 红 */
   const mcBox = sc!=null ? '<a class="mcbox '+(sc>=80?'g':(sc>=60?'y':'r'))+'" href="'+esc(it.score_url||'https://pitchfork.com/reviews/albums/')+
-      '" target="_blank" rel="noopener" title="'+esc(it.score_src||'Metacritic')+' '+sc+
-      (it.score_n? ' ('+it.score_n+' 条评论)' : '')+
-      (it.fans? ' · 艺人粉丝 '+Math.round(it.fans/10000)+'万' : '')+'">'+
+      '" target="_blank" rel="noopener" title="'+(it.score_src||'AOTY')+' '+sc+
+      (it.fame? ' · 知名度 '+(it.fame)+'分'+((it.fame_parts)? '（'+((it.fame_parts.chart)?'榜单'+it.fame_parts.chart+'分':'')+
+        ((it.fame_parts.fans)?' 粉丝'+it.fame_parts.fans+'分':'')+((it.fame_parts.mc)?' 媒体'+it.fame_parts.mc+'分':'')+'）' : '') : '')+
+      (it.fans? ' · 艺人粉丝 '+Math.round(it.fans/10000)+'万' : '')+
+      ((it.chart_regions&&it.chart_regions.length)? ' · Apple榜 '+it.chart_regions.join('/') : '')+'">'+
       '<span class="mcv">'+sc+'</span></a>' : '';
   const line2 = '<span>'+esc(it.artist||'')+'</span>';
   const line3 = [it.kind||it.genre||'', it.date? ((+it.date.slice(5,7))+'月'+(+it.date.slice(8,10))+'日') : ''].filter(Boolean).join(' · ');
