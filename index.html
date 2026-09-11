@@ -95,6 +95,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   /* 内容区初始就占满视口: 加载期间底部署名不在首屏内, 避免刷新时的跳动/闪烁 */
   #viewStack{min-height:calc(100vh - 100px);}
   .h2c{font-size:12.5px; color:var(--dim); font-weight:500; text-align:center; margin:0 0 12px; padding-top:16px;}
+  .sect{padding-top:16px;}   /* 顶部间距(原来挂在列表上方的计数行上) */
   .sect h2{
     font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-.01em;
     display:flex; align-items:baseline; gap:10px; margin:0 6px 14px;
@@ -297,9 +298,6 @@ function tabbed(tabsEl, panels){
       const items = g.games || g.movies || g.albums || [];
       const sect = document.createElement('div');
       sect.className = 'sect page' + (i===curIdx ? ' on' : '');
-      const h2 = document.createElement('div'); h2.className='h2c';
-      h2.textContent = items.length + ' ' + p.unit;
-      sect.appendChild(h2);
       const list = document.createElement('div'); list.className='list';
       if(!items.length) list.innerHTML='<div class="empty">'+esc(p.emptyText || '该月暂无已定档')+'</div>';
       else items.forEach(it=>list.appendChild(p.makeCard(it)));
