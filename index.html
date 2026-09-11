@@ -627,7 +627,7 @@ function mucard(it){
       '<span class="mcv">'+sc+'</span></a>' : '';
   const line2 = '<span>'+esc(it.artist||'')+'</span>';
   const line3 = [it.kind||it.genre||'', it.date? ((+it.date.slice(5,7))+'月'+(+it.date.slice(8,10))+'日') : ''].filter(Boolean).join(' · ');
-  const link = (it.url||it.apple_url) ? ' href="'+esc(it.url||it.apple_url)+'" target="_blank" rel="noopener"' : '';
+  /* 专辑名不加超链接(用户要求) */
   wrap.innerHTML =
     '<div class="pic sq">'+img+
       '<div class="ph" style="background:'+phColor(it.title)+(it.art?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
@@ -639,7 +639,6 @@ function mucard(it){
     '</div>'+mcBox;
   const t = wrap.querySelector('.t');
   t.textContent = it.title;
-  if(it.url||it.apple_url) t.outerHTML = '<a class="t"'+link+'>'+esc(it.title)+'</a>';
   return wrap;
 }
 
