@@ -706,7 +706,7 @@ async function refreshMusic(){
 
   let saved = 'game';
   try { saved = localStorage.getItem('glwView') || 'game'; } catch(e) {}
-  if(saved === 'movie') setView('movie', false);      // 恢复上次视图(无动画)
+  if(saved === 'movie' || saved === 'music') setView(saved, false);   // 恢复上次视图(无动画, 三个视图都要认)
   moveGlider(top, top.querySelector('.tab.on') || btns[0], true);   // 恢复定位不滑动
   window.addEventListener('resize', stackFit);
   window.addEventListener('resize', alignMc);
