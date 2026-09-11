@@ -621,8 +621,8 @@ function mucard(it){
   const img = it.art ? '<img class="cover" src="'+esc(it.art)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
   /* Metacritic 专业均分(百分制): ≥80 绿 / ≥60 黄 / <60 红 */
   const mcBox = sc!=null ? '<a class="mcbox '+(sc>=80?'g':(sc>=60?'y':'r'))+'" href="'+esc(it.score_url||'https://pitchfork.com/reviews/albums/')+
-      '" target="_blank" rel="noopener" title="AOTY 评分 '+sc+' (百分制)'+
-      (it.mc!=null?', Metacritic '+it.mc:'')+'">'+
+      '" target="_blank" rel="noopener" title="'+(it.score_src||'AOTY')+' '+sc+
+      (it.score_n? ' ('+it.score_n+(it.score_src&&it.score_src.indexOf('critic')>=0?' 条专业评论':' 人评分')+')' : '')+'">'+
       '<span class="mcv">'+sc+'</span></a>' : '';
   const line2 = '<span>'+esc(it.artist||'')+'</span>';
   const line3 = [it.kind||it.genre||'', it.date? ((+it.date.slice(5,7))+'月'+(+it.date.slice(8,10))+'日') : ''].filter(Boolean).join(' · ');
