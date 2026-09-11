@@ -442,8 +442,8 @@ function paint(){
   });
   if(state.music) panels.push({
     body: $('#musicBody'), groups: state.music.groups || [], makeCard: mucard, unit: '张',
-    emptyText: 'Pitchfork 只收录已发行专辑，下月暂无',
-    footFn: g => '共 ' + g.albums.length + ' 张 · 评分来自 Pitchfork'
+    emptyText: '该月暂无收录专辑',
+    footFn: g => '共 ' + g.albums.length + ' 张 · 评分来自 AOTY'
   });
   if(!panels.length) return;
   tabbed($('#tabs'), panels);
@@ -621,11 +621,11 @@ function mucard(it){
   const img = it.art ? '<img class="cover" src="'+esc(it.art)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
   /* Metacritic 专业均分(百分制): ≥80 绿 / ≥60 黄 / <60 红 */
   const mcBox = sc!=null ? '<a class="mcbox '+(sc>=80?'g':(sc>=60?'y':'r'))+'" href="'+esc(it.score_url||'https://pitchfork.com/reviews/albums/')+
-      '" target="_blank" rel="noopener" title="Pitchfork 评分 '+(it.rating!=null?it.rating.toFixed(1):'')+' (百分制 '+sc+')'+
+      '" target="_blank" rel="noopener" title="AOTY 评分 '+sc+' (百分制)'+
       (it.mc!=null?', Metacritic '+it.mc:'')+'">'+
       '<span class="mcv">'+sc+'</span></a>' : '';
   const line2 = '<span>'+esc(it.artist||'')+'</span>';
-  const line3 = [it.genre||'', it.date? ((+it.date.slice(5,7))+'月'+(+it.date.slice(8,10))+'日') : ''].filter(Boolean).join(' · ');
+  const line3 = [it.kind||it.genre||'', it.date? ((+it.date.slice(5,7))+'月'+(+it.date.slice(8,10))+'日') : ''].filter(Boolean).join(' · ');
   const link = (it.url||it.apple_url) ? ' href="'+esc(it.url||it.apple_url)+'" target="_blank" rel="noopener"' : '';
   wrap.innerHTML =
     '<div class="pic sq">'+img+
