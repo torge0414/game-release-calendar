@@ -187,6 +187,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
   .tab.on{color:var(--txt);}
   .tabs.top{margin:30px auto 2px;}   /* 标题与下方内容拉开距离 */
   .pic.m{flex:0 0 68px; width:68px; height:100px;}
+  .pic.sq{flex:0 0 68px; width:68px; height:68px;}   /* 专辑封面: 正方形 */
   .pic.m .ph{font-size:20px;}
   .item.mv{align-items:flex-start;}   /* 电影: 信息与封面顶对齐 */
   footer{color:var(--dim); font-size:11.5px; margin-top:40px; text-align:center; padding-bottom:8px;}
@@ -212,6 +213,7 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
       <span class="tabg"></span>
       <button class="tab on" data-view="game">游戏</button>
       <button class="tab" data-view="movie">电影</button>
+      <button class="tab" data-view="music">音乐</button>
     </div>
   </header>
   <!-- 月份页签移到视图外: 切游戏/电影时它不参与淡入淡出, 刷新也不会滑动 -->
@@ -226,6 +228,11 @@ if((_t==='dark')||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))docu
     <div class="meta"><span id="mmeta"></span><span class="msep">·</span><span>每月初自动更新</span></div>
     <div class="err" id="mErrBox"></div>
     <div id="movieBody"><div class="loading"><span class="spin"></span></div></div>
+  </div>
+  <div class="page" id="viewMusic">
+    <div class="meta"><span id="mumeta"></span><span class="msep">·</span><span>每月初自动更新</span></div>
+    <div class="err" id="muErrBox"></div>
+    <div id="musicBody"><div class="loading"><span class="spin"></span></div></div>
   </div>
   </div>
 </div>
@@ -287,7 +294,7 @@ function tabbed(tabsEl, panels){
     const pagesEl = document.createElement('div'); pagesEl.className='pages';
     p.pagesEl = pagesEl; p.sections = [];
     p.groups.forEach((g,i)=>{
-      const items = g.games || g.movies || [];
+      const items = g.games || g.movies || g.albums || [];
       const sect = document.createElement('div');
       sect.className = 'sect page' + (i===curIdx ? ' on' : '');
       const h2 = document.createElement('div'); h2.className='h2c';
@@ -420,7 +427,7 @@ function alignMc(){
   });
 }
 
-let state = { game: null, movie: null };
+let state = { game: null, movie: null, music: null };
 
 /* 两份数据任一到位就重建(月签只有一份, 同时控制两边列表) */
 function paint(){
@@ -433,10 +440,15 @@ function paint(){
     body: $('#movieBody'), groups: state.movie.groups || [], makeCard: mcard, unit: '部',
     footFn: g => '共 ' + g.movies.length + ' 部 · 评分来自豆瓣'
   });
+  if(state.music) panels.push({
+    body: $('#musicBody'), groups: state.music.groups || [], makeCard: mucard, unit: '张',
+    footFn: g => '共 ' + g.albums.length + ' 张 · 评分来自 Metacritic'
+  });
   if(!panels.length) return;
   tabbed($('#tabs'), panels);
   $('#metaTxt').textContent = '数据更新于 ' + ((state.game && state.game.updated) || '');
   $('#mmeta').textContent = '数据更新于 ' + ((state.movie && state.movie.updated) || '');
+  $('#mumeta').textContent = '数据更新于 ' + ((state.music && state.music.updated) || '');
   showCredit();
   stackFit();
   alignMc();
@@ -592,7 +604,64 @@ async function refreshMovies(){
   }
 }
 
-/* 顶层切换: 游戏 / 电影 (交叉重叠过渡, 与本月/下月页签同款; 记住上次视图) */
+/* ---------- 音乐(Apple Music + Metacritic) ---------- */
+function mucard(it){
+  const wrap = document.createElement('div'); wrap.className='item mv';
+  const sc = (typeof it.mc==='number' && it.mc>0) ? it.mc : null;
+  if(it.day===today.getDate() && it.month===today.getMonth()+1) wrap.classList.add('today');
+  const date = new Date(it.year, it.month-1, it.day);
+  const diff = Math.round((date - new Date(today.getFullYear(),today.getMonth(),today.getDate()))/86400000);
+  let whenTxt='', whenCls='';
+  if(diff===0){ whenTxt='今天发行'; whenCls='today'; }
+  else if(diff===1){ whenTxt='明天发行'; whenCls='today'; }
+  else if(diff>1){ whenTxt='还有 '+diff+' 天'; whenCls='soon'; }
+  else { whenTxt='已发行'; whenCls='out'; }
+  const whenTag = whenCls ? '<span class="when '+whenCls+'">'+whenTxt+'</span>' : '';
+  const img = it.art ? '<img class="cover" src="'+esc(it.art)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
+  /* Metacritic 专业均分(百分制): ≥80 绿 / ≥60 黄 / <60 红 */
+  const mcBox = sc!=null ? '<a class="mcbox '+(sc>=80?'g':(sc>=60?'y':'r'))+'" href="'+esc(it.mc_url||'https://www.metacritic.com/')+
+      '" target="_blank" rel="noopener" title="Metacritic 均分 '+sc+'">'+
+      '<span class="mcv">'+sc+'</span></a>' : '';
+  const line2 = '<span>'+esc(it.artist||'')+'</span>';
+  const line3 = [it.genre||'', it.date? ((+it.date.slice(5,7))+'月'+(+it.date.slice(8,10))+'日') : ''].filter(Boolean).join(' · ');
+  const link = it.apple_url ? ' href="'+esc(it.apple_url)+'" target="_blank" rel="noopener"' : '';
+  wrap.innerHTML =
+    '<div class="pic sq">'+img+
+      '<div class="ph" style="background:'+phColor(it.title)+(it.art?';display:none':'')+'">'+esc(firstChar(it.title))+'</div>'+
+    '</div>'+
+    '<div class="txt">'+
+      '<div class="tline'+(whenTag?' haswhen':'')+'"><div class="t"></div>'+whenTag+'</div>'+
+      '<div class="tag">'+line2+'</div>'+
+      (line3?'<div class="tag tag3"><span>'+esc(line3)+'</span></div>':'')+
+    '</div>'+mcBox;
+  const t = wrap.querySelector('.t');
+  t.textContent = it.title;
+  if(it.apple_url) t.outerHTML = '<a class="t"'+link+'>'+esc(it.title)+'</a>';
+  return wrap;
+}
+
+function renderMusic(d){
+  state.music = d;
+  paint();
+}
+
+let musicLoaded = false;
+async function refreshMusic(){
+  if(musicLoaded) return;
+  const box = $('#muErrBox');
+  box.style.display='none';
+  try{
+    const r = await fetch('music.json'); const d = await r.json();
+    if(d.error) throw new Error(d.error);
+    renderMusic(d);
+    musicLoaded = true;
+  }catch(e){
+    box.textContent='获取失败：'+e.message;
+    box.style.display='block';
+  }
+}
+
+/* 顶层切换: 游戏 / 电影 / 音乐 (交叉重叠过渡, 与本月/下月页签同款; 记住上次视图) */
 (function(){
   const top = document.getElementById('topTabs');
   if(!top) return;
@@ -600,14 +669,17 @@ async function refreshMovies(){
   const g = document.getElementById('viewGame'), m = document.getElementById('viewMovie');
   let curView = 'game';
 
+  const VIEWS = ['game', 'movie', 'music'];
+  const viewEl = { game: g, movie: m, music: document.getElementById('viewMusic') };
   function setView(v, animate){
-    if(v === curView || (v !== 'game' && v !== 'movie')) return;
-    const forward = (v === 'movie');
-    const cur = forward ? g : m, nxt = forward ? m : g;
+    if(v === curView || VIEWS.indexOf(v) < 0) return;
+    const forward = VIEWS.indexOf(v) > VIEWS.indexOf(curView);
+    const cur = viewEl[curView], nxt = viewEl[v];
     if(animate){
       animSwap(cur, nxt, forward);          // 旧视图先脱离文档流, 两视图都走 keyframes 动画
       /* 月份重置: 新视图立即归位(它刚从透明淡入, 看不到); 旧视图正在淡出, 等动画结束再归位(否则会闪出"本月"列表) */
-      const oldBody = forward ? document.getElementById('body') : document.getElementById('movieBody');
+      const BODY_ID = { game: 'body', movie: 'movieBody', music: 'musicBody' };
+      const oldBody = document.getElementById(BODY_ID[curView]);   // 旧视图的列表容器(月签重置时要跳过它)
       if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ skipBody: oldBody, glide: true });
       setTimeout(()=>{ if(window['_resetMonth_tabs']) window['_resetMonth_tabs']({ onlyBody: oldBody }); }, 700);
     } else {
@@ -620,6 +692,7 @@ async function refreshMovies(){
     const curBtn = btns.find(b=>b.dataset.view === v);
     if(curBtn) moveGlider(top, curBtn);
     if(v === 'movie') refreshMovies();
+    if(v === 'music') refreshMusic();
     /* 直接用新视图高度(切换瞬间它可能还没拿到 on), 高度瞬时调整 */
     const stack = document.getElementById('viewStack');
     if(stack) stack.style.height = nxt.offsetHeight + 'px';
@@ -641,6 +714,7 @@ async function refreshMovies(){
 window.addEventListener('load', ()=>{ alignMc(); stackFit(); });   // 字体/图片就位后重算布局对齐
 refresh();
 refreshMovies();   // 预渲染电影视图: 首次切换时高度已就位, 避免"先塌后撑"的下沉
+refreshMusic();    // 预渲染音乐视图
 </script>
 </body>
 </html>
